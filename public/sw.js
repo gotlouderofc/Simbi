@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   '/index.html',
   '/manifest.json',
   '/icon.svg',
+  '/icon.png',
   '/src/main.tsx',
   '/src/index.css',
   '/src/App.tsx'

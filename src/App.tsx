@@ -1428,19 +1428,19 @@ export default function App() {
                   </h1>
                 </div>
               </div>
-              <div className="flex flex-row items-center gap-3 shrink-0">
+              <div className="flex flex-row items-center gap-2.5 shrink-0">
                 <button
                   onClick={openNewScriptModal}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-bold rounded-lg text-xs tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-black rounded-lg text-[11px] tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-neutral-950" />
+                  <Plus className="w-3.5 h-3.5 text-neutral-950" />
                   <span>Script</span>
                 </button>
                 <button
                   onClick={openNewNoteModal}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-200 font-bold rounded-lg text-xs tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-200 font-bold rounded-lg text-[11px] tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
                 >
-                  <Lightbulb className="w-4 h-4 text-[#5d8f25]" />
+                  <Lightbulb className="w-3.5 h-3.5 text-[#5d8f25]" />
                   <span>Idea</span>
                 </button>
               </div>
