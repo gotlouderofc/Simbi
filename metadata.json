@@ -1,0 +1,6 @@
+{
+  "name": "Simbi",
+  "description": "Simbi: made with love by Emmanuel Enivweru for everything who tell story.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
