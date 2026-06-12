@@ -40,6 +40,28 @@
         }
         lastGestureTime = currentTime;
       }, false);
+
+      // Prevent native Safari gesture-based zooming mechanics
+      document.addEventListener('gesturestart', (event) => {
+        event.preventDefault();
+      });
+      document.addEventListener('gesturechange', (event) => {
+        event.preventDefault();
+      });
+
+      // Prevent Ctrl + scroll zoom on desktops
+      document.addEventListener('wheel', (event) => {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+        }
+      }, { passive: false });
+
+      // Block key combination shortcuts for browser scaling (Ctrl +/-/0)
+      document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '-' || event.key === '+' || event.key === '0')) {
+          event.preventDefault();
+        }
+      });
     </script>
   </body>
 </html>

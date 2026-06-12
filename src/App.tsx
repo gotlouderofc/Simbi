@@ -1414,7 +1414,7 @@ export default function App() {
         // ============================================
         // CATALOGUE HOME SCREEN
         // ============================================
-        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
           {/* Main Top Header bar */}
           <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -1450,9 +1450,9 @@ export default function App() {
           {/* Central content container */}
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3 mb-8">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-[#97cc5b]" />
-                <h2 className="text-sm font-black uppercase text-neutral-600 tracking-wider">Dear Storyteller</h2>
+              <div className="flex items-center gap-2 shrink-0">
+                <BookOpen className="w-4 h-4 text-[#97cc5b] shrink-0" />
+                <h2 className="text-xs sm:text-sm font-black uppercase text-neutral-600 tracking-wider whitespace-nowrap">Dear Storyteller</h2>
               </div>
               <div className="flex items-center gap-2">
                 {/* Hidden browser PDF / SimbiDoc upload input */}
@@ -1699,19 +1699,12 @@ export default function App() {
             
             {/* Top-Bar Overlay Custom Formatting Plugin Modal */}
             <div 
-              className={`absolute left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-2.5 shadow-2xl flex items-center gap-3 transition-all duration-300 ease-in-out select-none ${
+              className={`absolute left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-1.5 sm:p-2 shadow-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ease-in-out select-none max-w-[95vw] sm:max-w-none ${
                 isExtensionModalOpen 
                   ? 'top-4 opacity-100 scale-100 pointer-events-auto shadow-2xl' 
                   : '-top-24 opacity-0 scale-95 pointer-events-none'
               }`}
-              style={{ minWidth: '400px' }}
             >
-              <div className="flex items-center gap-1.5 pl-2 text-amber-600 font-bold text-xs uppercase tracking-wider">
-                <Puzzle className="w-4 h-4 animate-pulse text-amber-500" />
-              </div>
-              
-              <div className="h-4 w-px bg-neutral-200" />
-
               <div className="flex items-center gap-1">
                 {/* Bold */}
                 <button
@@ -1736,7 +1729,7 @@ export default function App() {
                 {/* Align Left */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
-                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
+                  className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Left"
                 >
                   <AlignLeft className="w-4 h-4" />
@@ -1745,7 +1738,7 @@ export default function App() {
                 {/* Align Center */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
-                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
+                  className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Center"
                 >
                   <AlignCenter className="w-4 h-4" />
@@ -1754,7 +1747,7 @@ export default function App() {
                 {/* Align Right */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
-                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
+                  className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Right"
                 >
                   <AlignRight className="w-4 h-4" />
@@ -1795,7 +1788,7 @@ export default function App() {
               {/* Dismiss button */}
               <button
                 onClick={() => setIsExtensionModalOpen(false)}
-                className="ml-auto p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                className="p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
                 title="Dismiss overlay"
               >
                 <X className="w-4 h-4" />

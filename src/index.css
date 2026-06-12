@@ -38,6 +38,18 @@ html, body {
   background: #97cc5b;
 }
 
+/* Hide scrollbars specifically for the main catalogue homescreen */
+.homescreen-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.homescreen-container {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
 /* ==========================================================================
    Simbi Aesthetic styling overrides
    ========================================================================== */
