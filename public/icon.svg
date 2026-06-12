@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Rounded dark background container to appear exquisite on home screens -->
+  <rect width="512" height="512" rx="110" fill="#1c1917"/>
+  
+  <!-- Outer accent rings -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="#2e2a24" stroke-width="4" stroke-dasharray="8 8"/>
+  <circle cx="256" cy="256" r="215" fill="none" stroke="#97cc5b" stroke-width="2" stroke-opacity="0.2"/>
+
+  <!-- Main page container centered -->
+  <g transform="translate(116, 96)">
+    <!-- Main page base sheet (white with premium green border) -->
+    <rect x="0" y="0" width="280" height="320" rx="20" fill="#ffffff" stroke="#97cc5b" stroke-width="12" filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.4))" />
+    
+    <!-- Top-right ear fold decoration -->
+    <path d="M 200 0 L 280 80 L 280 0 Z" fill="#cee7aa" stroke="#97cc5b" stroke-width="6" />
+
+    <!-- Simulated screenplay formatting guides -->
+    <line x1="36" y1="50" x2="150" y2="50" stroke="#e7e5e4" stroke-width="6" stroke-linecap="round" />
+    <line x1="36" y1="75" x2="180" y2="75" stroke="#d6d3d1" stroke-width="6" stroke-linecap="round" />
+    
+    <!-- The prominent stylized letter S -->
+    <path d="M 110 155 C 110 120, 170 120, 170 150 C 170 180, 110 180, 110 210 C 110 240, 170 240, 170 215" 
+          fill="none" 
+          stroke="#5d8f25" 
+          stroke-width="26" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+          
+    <!-- Decorative page lines below the S -->
+    <line x1="36" y1="265" x2="244" y2="265" stroke="#e7e5e4" stroke-width="6" stroke-linecap="round" />
+    <line x1="100" y1="285" x2="180" y2="285" stroke="#97cc5b" stroke-opacity="0.6" stroke-width="5" stroke-linecap="round" />
+  </g>
+</svg>

@@ -3,11 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Simbi Screenplay Writer</title>
+    <!-- PWA configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#538221" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Simbi Writer" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('Simbi service worker registered:', reg.scope))
+            .catch((err) => console.error('Simbi service worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
 

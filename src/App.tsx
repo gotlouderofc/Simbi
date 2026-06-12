@@ -1858,10 +1858,6 @@ export default function App() {
                     <div className="p-2 bg-[#97cc5b]/10 rounded-lg text-[#5d8f25]">
                       <Settings className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 uppercase block">{activeScript?.title || 'Screenplay Details'}</h4>
-                      <p className="text-[10px] text-neutral-500 block">Configure cover page metadata, writers, contact, spec notes.</p>
-                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2232,15 +2228,9 @@ export default function App() {
               >
                 
                 {/* Optional brief details metadata overlay panel inside paper */}
-                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <h4 className="text-xs font-bold text-neutral-800 uppercase block truncate">{activeNote?.title || 'Raw Planning Notes'}</h4>
-                    <p className="text-[11px] text-neutral-500 block mt-1">
-                      {activeNote?.description || 'Freeform creative sandbox. Supports rich formatting highlights, alignments, auto-saving, and PDF generation.'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 font-mono text-[10px] text-[#5d8f25]">
-                    <Clock className="w-3 h-3 text-[#5d8f25]" />
+                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-start shadow-sm">
+                  <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25]">
+                    <Clock className="w-3.5 h-3.5 text-[#5d8f25]" />
                     <span>Last edited {activeNote && formatDateStr(activeNote.updatedAt)}</span>
                   </div>
                 </div>
@@ -2294,12 +2284,22 @@ export default function App() {
               
               {/* Document Icon & Title Panel */}
               <div className="flex flex-col items-center justify-center p-5 bg-neutral-50 border border-neutral-100 rounded-2xl">
-                <img 
-                  src="/src/assets/images/simbidoc_icon_1781194858674.jpg" 
-                  alt=".simbidoc format icon" 
-                  className="w-24 h-24 object-contain rounded-xl shadow-md border border-neutral-200 bg-white p-1"
-                  referrerPolicy="no-referrer"
-                />
+                {/* SVG representation of .simbidoc format */}
+                <svg className="w-24 h-24 drop-shadow-md select-none" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Rounded white paper sheet with thick green border */}
+                  <rect x="6" y="6" width="88" height="108" rx="14" fill="#FFFFFF" stroke="#97cc5b" strokeWidth="5"/>
+                  
+                  {/* Elegant document ear-fold page corner at top right */}
+                  <path d="M 68 6 L 94 32 L 68 32 Z" fill="#cee7aa" stroke="#97cc5b" strokeWidth="2" strokeLinejoin="round"/>
+                  
+                  {/* Symbolic screenplay text structures */}
+                  <line x1="20" y1="20" x2="58" y2="20" stroke="#e5e5e5" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="20" y1="32" x2="72" y2="32" stroke="#d4d4d8" strokeWidth="4" strokeLinecap="round"/>
+                  
+                  {/* Large prominent stylized emerald green S */}
+                  <path d="M 38 68 C 38 56, 62 56, 62 68 C 62 80, 38 80, 38 92 C 38 104, 62 104, 62 92" 
+                        stroke="#5d8f25" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
                 <h4 className="text-sm font-bold text-neutral-800 mt-3 text-center truncate w-full px-4">
                   {sharingItem.title || 'Untitled'}
                 </h4>
