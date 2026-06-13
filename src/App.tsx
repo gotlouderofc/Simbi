@@ -1602,7 +1602,7 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleOpenScript(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-b-xl rounded-t-none p-4 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-amber-500/20">
@@ -1655,7 +1655,7 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleOpenNote(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-b-xl rounded-t-none p-4 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-[#97cc5b]/10 text-[#97cc5b] rounded-md text-[9px] font-black uppercase tracking-wider border border-[#97cc5b]/20">
@@ -1665,10 +1665,6 @@ export default function App() {
                             <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
                               {item.title || 'Untitled note'}
                             </h3>
-                            {/* Description text */}
-                            <p className="text-xs text-neutral-400 mt-1 line-clamp-1 italic font-normal">
-                              {item.description || 'No description provided.'}
-                            </p>
                             {/* Simplified smaller date */}
                             <p className="text-[10px] text-neutral-500 mt-1">
                               {formatDateStr(item.updatedAt)}
@@ -1847,6 +1843,7 @@ export default function App() {
                 {/* Bold */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyBold(); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleApplyBold(); }}
                   className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Make Selected Text Bold"
                 >
@@ -1856,6 +1853,7 @@ export default function App() {
                 {/* Italic */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyItalic(); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleApplyItalic(); }}
                   className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Make Selected Text Italic"
                 >
@@ -1867,6 +1865,7 @@ export default function App() {
                 {/* Align Left */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Left"
                 >
@@ -1876,6 +1875,7 @@ export default function App() {
                 {/* Align Center */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Center"
                 >
@@ -1885,6 +1885,7 @@ export default function App() {
                 {/* Align Right */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Right"
                 >
@@ -1896,6 +1897,7 @@ export default function App() {
                 {/* Reset format */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
                   className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-500 hover:text-rose-600 transition flex items-center justify-center cursor-pointer"
                   title="Reset Formatting"
                 >
@@ -1907,6 +1909,10 @@ export default function App() {
                 {/* Kite Find & Replace button */}
                 <button
                   onMouseDown={(e) => { 
+                    e.preventDefault(); 
+                    setIsFindReplaceOpen(true); 
+                  }}
+                  onTouchStart={(e) => { 
                     e.preventDefault(); 
                     setIsFindReplaceOpen(true); 
                   }}
@@ -2093,7 +2099,7 @@ export default function App() {
 
               {/* Floating Vertical Formatting Toolbar on the Right side of the window */}
               <div 
-                className={`fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[82vh] overflow-y-auto overflow-x-hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
+                className={`fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[calc(100dvh-120px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
                   isScriptRightFormattingOpen 
                     ? 'translate-x-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
                     : 'translate-x-[200%] opacity-0 pointer-events-none scale-95'
@@ -2107,6 +2113,10 @@ export default function App() {
                       key={opt.format}
                       onMouseDown={(e) => {
                         e.preventDefault(); // Stop from stealing editor focus!
+                        handleApplyFormat(opt.format);
+                      }}
+                      onTouchStart={(e) => {
+                        e.preventDefault(); // Prevent focus loss on touchscreens too!
                         handleApplyFormat(opt.format);
                       }}
                       className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
@@ -2126,6 +2136,10 @@ export default function App() {
                 {/* Puzzle piece plugin extension button */}
                 <button
                   onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsExtensionModalOpen(!isExtensionModalOpen);
+                  }}
+                  onTouchStart={(e) => {
                     e.preventDefault();
                     setIsExtensionModalOpen(!isExtensionModalOpen);
                   }}
@@ -2231,7 +2245,7 @@ export default function App() {
             {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
             {noteEditMode === 'edit' && (
               <div 
-                className={`absolute top-4 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-full shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 transition-all duration-300 ease-in-out select-none ${
+                className={`fixed left-4 top-24 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-2xl shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 max-h-[calc(100dvh-120px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden transition-all duration-300 ease-in-out select-none ${
                   isNoteSidebarOpen 
                     ? 'left-4 opacity-100 scale-100 pointer-events-auto shadow-xl' 
                     : '-left-16 opacity-0 scale-95 pointer-events-none'
@@ -2241,7 +2255,8 @@ export default function App() {
                 {/* Bold */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyBold(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleApplyBold(); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title="Bold Selected"
                 >
                   <Bold className="w-4 h-4" />
@@ -2250,18 +2265,20 @@ export default function App() {
                 {/* Italic */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyItalic(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleApplyItalic(); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title="Italic Selected"
                 >
                   <Italic className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
 
                 {/* Left alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title="Align Left"
                 >
                   <AlignLeft className="w-4 h-4" />
@@ -2270,7 +2287,8 @@ export default function App() {
                 {/* Center alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title="Align Center"
                 >
                   <AlignCenter className="w-4 h-4" />
@@ -2279,43 +2297,47 @@ export default function App() {
                 {/* Right alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title="Align Right"
                 >
                   <AlignRight className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
 
                 {/* Reset format */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-rose-50 rounded-full text-rose-500 hover:text-rose-600 transition cursor-pointer"
+                  onTouchStart={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-rose-50 rounded-full text-rose-500 hover:text-rose-600 transition cursor-pointer shrink-0"
                   title="Clear formatting"
                 >
                   <RemoveFormatting className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
 
                 {/* Zoom Out */}
                 <button
-                  onClick={handleZoomOut}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onMouseDown={(e) => { e.preventDefault(); handleZoomOut(); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleZoomOut(); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title={`Zoom Out (${zoomLevel}%)`}
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
 
                 {/* Zoom display */}
-                <span className="text-[9px] font-mono font-bold text-neutral-500 select-none">
+                <span className="text-[9px] font-mono font-bold text-neutral-500 select-none shrink-0">
                   {zoomLevel}%
                 </span>
 
                 {/* Zoom In */}
                 <button
-                  onClick={handleZoomIn}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
+                  onMouseDown={(e) => { e.preventDefault(); handleZoomIn(); }}
+                  onTouchStart={(e) => { e.preventDefault(); handleZoomIn(); }}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
                   title={`Zoom In (${zoomLevel}%)`}
                 >
                   <ZoomIn className="w-4 h-4" />
