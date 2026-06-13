@@ -1971,7 +1971,7 @@ export default function App() {
             {/* Sidebar trigger switch pin button */}
             <button
                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-               className="fixed sm:absolute bottom-6 left-6 z-30 p-3 bg-white text-[#5d8f25] hover:bg-neutral-100 border border-neutral-300 rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center font-bold"
+               className="fixed bottom-6 left-6 z-40 p-3 bg-white text-[#5d8f25] hover:bg-neutral-100 border border-neutral-300 rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center font-bold"
                title="Toggle Screenplay Navigator"
             >
               {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -2354,21 +2354,6 @@ export default function App() {
               {noteEditMode === 'read' ? <BookOpen className="w-5 h-5 text-neutral-955" /> : <Eye className="w-5 h-5 text-neutral-955" />}
             </button>
 
-            {/* Subtle corner Auto-save notification badge */}
-            <div className="fixed bottom-6 left-6 z-40 pointer-events-none transition-all duration-300">
-              {saveStatus === 'saving' ? (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/90 text-[10px] font-bold text-neutral-200 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-pulse animate-fade-in">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span>Saving...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/80 text-[10px] font-semibold text-neutral-300 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-fade-in">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
-                  <span>Draft Saved</span>
-                </div>
-              )}
-            </div>
-
             <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex justify-center p-4 sm:p-8 select-text relative">
               
               {/* Note paper sheet wrapping layer */}
@@ -2381,10 +2366,23 @@ export default function App() {
               >
                 
                 {/* Optional brief details metadata overlay panel inside paper */}
-                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-start shadow-sm">
+                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25]">
                     <Clock className="w-3.5 h-3.5 text-[#5d8f25]" />
                     <span>Last edited {activeNote && formatDateStr(activeNote.updatedAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 select-none font-mono text-[9px] uppercase tracking-wider">
+                    {saveStatus === 'saving' ? (
+                      <span className="flex items-center gap-1 text-amber-500 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        Saving
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[#5d8f25] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
+                        Saved
+                      </span>
+                    )}
                   </div>
                 </div>
 
