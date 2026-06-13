@@ -20,7 +20,11 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.5'
 
     - name: Grant Execute Permission to Gradlew
       run: |
@@ -34,7 +38,7 @@ jobs:
         if [ -f "./gradlew" ]; then
           ./gradlew assembleDebug
         else
-          # Fallback to standard gradle if wrapper is missing in source
+          # Fallback to standard gradle setup by setup-gradle action
           gradle assembleDebug
         fi
 
