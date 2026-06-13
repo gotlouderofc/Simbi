@@ -30,7 +30,6 @@ import {
   MessageSquare,
   Home,
   ArrowRight,
-  ArrowLeft,
   Bold,
   Italic,
   AlignLeft,
@@ -170,7 +169,6 @@ export default function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [sharingItem, setSharingItem] = useState<any>(null);
   const [sharingType, setSharingType] = useState<'script' | 'note' | null>(null);
-  const [isAppSettingsOpen, setIsAppSettingsOpen] = useState<boolean>(false);
 
   // Autofocus synchronization state variables
   const pendingFocusRef = useRef<{ index: number; caretPosition: 'start' | 'end' | number } | null>(null);
@@ -1485,118 +1483,10 @@ export default function App() {
       </div>
 
       {currentScriptId === null && currentNoteId === null ? (
-        isAppSettingsOpen ? (
-          // ============================================
-          // APP SUMMARY & SYSTEM SETTINGS SCREEN (PAGE)
-          // ============================================
-          <div className="flex-1 flex flex-col bg-[#FAF9F6] select-text overflow-y-auto w-full animate-fade-in">
-            <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
-              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsAppSettingsOpen(false)}
-                    className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer border border-neutral-200"
-                    title="Back to Catalogue"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-[#97cc5b] animate-[spin_15s_linear_infinite]" />
-                    <h1 className="text-xl font-bold tracking-tight text-neutral-900">
-                      Settings
-                    </h1>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsAppSettingsOpen(false)}
-                  className="text-xs font-bold text-[#5d8f25] hover:underline cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
-            </header>
-
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-              {/* Top Section with App Details & Offline info */}
-              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800 mb-2">Simbi Environment</h2>
-                <p className="text-xs text-neutral-500 leading-relaxed max-w-2xl mb-4">
-                  Simbi is a fully offline-first screenplay and creative conceptualization environment. All screenplays and ideas notes are stored securely on your browser's internal local database. No cloud accounts required.
-                </p>
-                <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-4 text-amber-900 space-y-2">
-                  <span className="text-xs font-bold block">Offline Local Storage & Cache Status</span>
-                  <p className="text-xs text-amber-700 leading-relaxed font-normal">
-                    Everything you write is saved in real-time. When you have no connection, your writing, formatting, templates, and tools remain completely accessible.
-                  </p>
-                </div>
-              </div>
-
-              {/* Reset application panel */}
-              <div className="bg-rose-50/30 border border-rose-100 rounded-2xl p-6 shadow-sm space-y-4">
-                <div>
-                  <h2 className="text-sm font-black uppercase tracking-wider text-rose-800 mb-1">System Control & Reset</h2>
-                  <p className="text-xs text-rose-600">
-                    Purges all browser memory, local drafts, cached templates, and retrieves the latest service worker code from the network.
-                  </p>
-                </div>
-
-                <button
-                  onClick={async () => {
-                    if (confirm("Are you sure you want to reset Simbi? This clears all personal drafts, restores original sample documents, purges browser caches, and forces service workers to fetch fresh updates from the server.")) {
-                      // Clear localStorage
-                      localStorage.removeItem('screenwriter_scripts');
-                      localStorage.removeItem('screenwriter_notes');
-
-                      // Clear Cache API
-                      if ('caches' in window) {
-                        try {
-                          const keys = await caches.keys();
-                          await Promise.all(keys.map(key => caches.delete(key)));
-                        } catch (e) {
-                          console.error('Failed to clear cache API:', e);
-                        }
-                      }
-
-                      // Unregister Service Workers
-                      if ('serviceWorker' in navigator) {
-                        try {
-                          const regs = await navigator.serviceWorker.getRegistrations();
-                          await Promise.all(regs.map(reg => reg.unregister()));
-                        } catch (e) {
-                          console.error('Failed to unregister SW:', e);
-                        }
-                      }
-
-                      // Hard reload from web with cache buster to force re-cache
-                      window.location.href = window.location.origin + '?reset=' + Date.now();
-                    }
-                  }}
-                  className="py-2.5 px-5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Reset All App Data</span>
-                </button>
-              </div>
-
-              {/* About section placeholder */}
-              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-3">
-                <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">About Simbi</h2>
-                <div className="text-xs text-neutral-500 leading-relaxed space-y-2">
-                  <p>
-                    [ This is a placeholder for the About Simbi section. You will be able to customize this block of text with credentials, licenses, version indicators, and credit highlights later. ]
-                  </p>
-                  <p className="font-mono text-[10px] text-neutral-400">
-                     Version 1.2.0 (Stable Cache-PWA Native Build)
-                  </p>
-                </div>
-              </div>
-            </main>
-          </div>
-        ) : (
-          // ============================================
-          // CATALOGUE HOME SCREEN
-          // ============================================
-          <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
+        // ============================================
+        // CATALOGUE HOME SCREEN
+        // ============================================
+        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
           {/* Main Top Header bar */}
           <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -1633,8 +1523,8 @@ export default function App() {
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3 mb-8">
               <div className="flex items-center gap-2 shrink-0">
-                <BookOpen className="w-3.5 h-3.5 text-[#97cc5b] shrink-0" />
-                <h2 className="text-[9px] sm:text-[10px] font-black uppercase text-neutral-600 tracking-widest whitespace-nowrap">Dear Storyteller</h2>
+                <BookOpen className="w-4 h-4 text-[#97cc5b] shrink-0" />
+                <h2 className="text-xs sm:text-sm font-black uppercase text-neutral-600 tracking-wider whitespace-nowrap">Dear Storyteller</h2>
               </div>
               <div className="flex items-center gap-2">
                 {/* Hidden browser PDF / SimbiDoc upload input */}
@@ -1711,7 +1601,7 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleOpenScript(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-b-xl rounded-t-none p-4 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-amber-500/20">
@@ -1764,7 +1654,7 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleOpenNote(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-b-xl rounded-t-none p-4 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-[#97cc5b]/10 text-[#97cc5b] rounded-md text-[9px] font-black uppercase tracking-wider border border-[#97cc5b]/20">
@@ -1774,6 +1664,10 @@ export default function App() {
                             <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
                               {item.title || 'Untitled note'}
                             </h3>
+                            {/* Description text */}
+                            <p className="text-xs text-neutral-400 mt-1 line-clamp-1 italic font-normal">
+                              {item.description || 'No description provided.'}
+                            </p>
                             {/* Simplified smaller date */}
                             <p className="text-[10px] text-neutral-500 mt-1">
                               {formatDateStr(item.updatedAt)}
@@ -1818,18 +1712,8 @@ export default function App() {
               );
             })()}
           </main>
-
-          {/* Sticky floating Settings icon on bottom-left, transparent background */}
-          <button
-            onClick={() => setIsAppSettingsOpen(true)}
-            className="fixed bottom-4 left-4 z-40 p-2 text-neutral-400 hover:text-neutral-700 bg-transparent rounded-full hover:bg-neutral-200/40 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border border-transparent hover:border-neutral-200/30 shadow-none hover:shadow-xs"
-            title="App Settings"
-          >
-            <Settings className="w-4 h-4 animate-[spin_10s_linear_infinite]" />
-          </button>
         </div>
-      )
-    ) : currentScriptId !== null ? (
+      ) : currentScriptId !== null ? (
         // ============================================
         // SCRIPT EDITOR WORKSPACE
         // ============================================
@@ -1862,19 +1746,18 @@ export default function App() {
           {/* Core Drafting Split Board Layout */}
           <div className="flex-1 flex min-h-0 relative overflow-hidden">
             
-            {/* Bottom-Bar Overlay Custom Formatting Plugin (Spawns above formatting bottom bar) */}
+            {/* Top-Bar Overlay Custom Formatting Plugin Modal */}
             <div 
-              className={`fixed left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-1.5 sm:p-2 shadow-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ease-in-out select-none max-w-[95vw] sm:max-w-none ${
+              className={`absolute left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-1.5 sm:p-2 shadow-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ease-in-out select-none max-w-[95vw] sm:max-w-none ${
                 isExtensionModalOpen 
-                  ? 'bottom-18 sm:bottom-20 md:bottom-22 opacity-100 scale-100 pointer-events-auto shadow-2xl' 
-                  : '-bottom-32 opacity-0 scale-95 pointer-events-none'
+                  ? 'top-4 opacity-100 scale-100 pointer-events-auto shadow-2xl' 
+                  : '-top-24 opacity-0 scale-95 pointer-events-none'
               }`}
             >
               <div className="flex items-center gap-1">
                 {/* Bold */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyBold(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleApplyBold(); }}
                   className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Make Selected Text Bold"
                 >
@@ -1884,7 +1767,6 @@ export default function App() {
                 {/* Italic */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyItalic(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleApplyItalic(); }}
                   className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Make Selected Text Italic"
                 >
@@ -1896,7 +1778,6 @@ export default function App() {
                 {/* Align Left */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Left"
                 >
@@ -1906,7 +1787,6 @@ export default function App() {
                 {/* Align Center */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Center"
                 >
@@ -1916,7 +1796,6 @@ export default function App() {
                 {/* Align Right */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
                   className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   title="Align Right"
                 >
@@ -1928,7 +1807,6 @@ export default function App() {
                 {/* Reset format */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
                   className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-500 hover:text-rose-600 transition flex items-center justify-center cursor-pointer"
                   title="Reset Formatting"
                 >
@@ -1940,10 +1818,6 @@ export default function App() {
                 {/* Kite Find & Replace button */}
                 <button
                   onMouseDown={(e) => { 
-                    e.preventDefault(); 
-                    setIsFindReplaceOpen(true); 
-                  }}
-                  onTouchStart={(e) => { 
                     e.preventDefault(); 
                     setIsFindReplaceOpen(true); 
                   }}
@@ -1999,6 +1873,15 @@ export default function App() {
               />
             </div>
 
+            {/* Sidebar trigger switch pin button */}
+            <button
+               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+               className="fixed sm:absolute bottom-6 left-6 z-30 p-3 bg-white text-[#5d8f25] hover:bg-neutral-100 border border-neutral-300 rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center font-bold"
+               title="Toggle Screenplay Navigator"
+            >
+              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
             {/* Main scroll editor workspace */}
             <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex justify-center p-3 sm:p-6 select-text relative">
               
@@ -2014,15 +1897,9 @@ export default function App() {
                 {/* Meta details config badge block inside the main canvas */}
                 <div className="mb-6 w-full max-w-[650px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between select-none shadow-md shadow-[#97cc5b]/5">
                   <div className="flex items-center gap-3">
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onTouchStart={(e) => e.preventDefault()}
-                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                      className="p-2 bg-[#97cc5b]/10 hover:bg-[#97cc5b]/20 text-[#5d8f25] rounded-lg transition duration-150 cursor-pointer flex items-center justify-center font-fold"
-                      title="Toggle Screenplay Navigator"
-                    >
-                      <Menu className="w-4 h-4" />
-                    </button>
+                    <div className="p-2 bg-[#97cc5b]/10 rounded-lg text-[#5d8f25]">
+                      <Settings className="w-4 h-4" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2125,14 +2002,14 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Floating Horizontal Formatting Bottom Bar - Prominently sticky at screen bottom */}
+              {/* Floating Vertical Formatting Toolbar on the Right side of the window */}
               <div 
-                className={`fixed left-1/2 -translate-x-1/2 bottom-5 sm:bottom-6 z-40 bg-white border border-neutral-200 p-1.5 sm:p-2 rounded-2xl flex flex-row items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-w-[calc(100vw-32px)] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden shrink-0 select-none transition-all duration-300 ease-in-out ${
+                className={`fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[82vh] overflow-y-auto overflow-x-hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
                   isScriptRightFormattingOpen 
-                    ? 'translate-y-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
-                    : 'translate-y-[200%] opacity-0 pointer-events-none scale-95'
+                    ? 'translate-x-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
+                    : 'translate-x-[200%] opacity-0 pointer-events-none scale-95'
                 }`}
-                title="Format Selection Bottom Bar"
+                title="Format Selection Sidebar"
               >
                 {formattingOptions.map(opt => {
                   const isActive = currentSelectionFormat === opt.format;
@@ -2141,10 +2018,6 @@ export default function App() {
                       key={opt.format}
                       onMouseDown={(e) => {
                         e.preventDefault(); // Stop from stealing editor focus!
-                        handleApplyFormat(opt.format);
-                      }}
-                      onTouchStart={(e) => {
-                        e.preventDefault(); // Prevent focus loss on touchscreens too!
                         handleApplyFormat(opt.format);
                       }}
                       className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
@@ -2159,15 +2032,11 @@ export default function App() {
                   );
                 })}
 
-                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
+                <div className="w-6 h-px bg-neutral-200 my-0.5 shrink-0" />
 
                 {/* Puzzle piece plugin extension button */}
                 <button
                   onMouseDown={(e) => {
-                    e.preventDefault();
-                    setIsExtensionModalOpen(!isExtensionModalOpen);
-                  }}
-                  onTouchStart={(e) => {
                     e.preventDefault();
                     setIsExtensionModalOpen(!isExtensionModalOpen);
                   }}
@@ -2269,21 +2138,21 @@ export default function App() {
 
           {/* Editor Workspace flex wrapper for sidebar + main */}
           <div className="flex-1 flex min-h-0 relative">
-                    {/* Slim Floating Formatting Bottom Bar (Icons Only) */}
+            
+            {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
             {noteEditMode === 'edit' && (
               <div 
-                className={`fixed left-1/2 -translate-x-1/2 bottom-5 sm:bottom-6 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 sm:p-2 rounded-2xl shadow-lg flex flex-row items-center gap-2 max-w-[calc(100vw-32px)] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden shrink-0 transition-all duration-300 ease-in-out select-none ${
+                className={`absolute top-4 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-full shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 transition-all duration-300 ease-in-out select-none ${
                   isNoteSidebarOpen 
-                    ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' 
-                    : 'translate-y-[200%] opacity-0 scale-95 pointer-events-none'
+                    ? 'left-4 opacity-100 scale-100 pointer-events-auto shadow-xl' 
+                    : '-left-16 opacity-0 scale-95 pointer-events-none'
                 }`}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Bold */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyBold(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleApplyBold(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title="Bold Selected"
                 >
                   <Bold className="w-4 h-4" />
@@ -2292,20 +2161,18 @@ export default function App() {
                 {/* Italic */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleApplyItalic(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleApplyItalic(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title="Italic Selected"
                 >
                   <Italic className="w-4 h-4" />
                 </button>
 
-                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5" />
 
                 {/* Left alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('left'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title="Align Left"
                 >
                   <AlignLeft className="w-4 h-4" />
@@ -2314,8 +2181,7 @@ export default function App() {
                 {/* Center alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('center'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title="Align Center"
                 >
                   <AlignCenter className="w-4 h-4" />
@@ -2324,47 +2190,43 @@ export default function App() {
                 {/* Right alignment */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleChangeAlignment('right'); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title="Align Right"
                 >
                   <AlignRight className="w-4 h-4" />
                 </button>
 
-                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5" />
 
                 {/* Reset format */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleResetNormalFormatting(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-rose-50 rounded-full text-rose-500 hover:text-rose-600 transition cursor-pointer shrink-0"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-rose-50 rounded-full text-rose-500 hover:text-rose-600 transition cursor-pointer"
                   title="Clear formatting"
                 >
                   <RemoveFormatting className="w-4 h-4" />
                 </button>
 
-                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
+                <div className="w-5 h-px bg-neutral-200 my-0.5" />
 
                 {/* Zoom Out */}
                 <button
-                  onMouseDown={(e) => { e.preventDefault(); handleZoomOut(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleZoomOut(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  onClick={handleZoomOut}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title={`Zoom Out (${zoomLevel}%)`}
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
 
                 {/* Zoom display */}
-                <span className="text-[10px] font-mono font-bold text-neutral-500 select-none shrink-0 px-1">
+                <span className="text-[9px] font-mono font-bold text-neutral-500 select-none">
                   {zoomLevel}%
                 </span>
 
                 {/* Zoom In */}
                 <button
-                  onMouseDown={(e) => { e.preventDefault(); handleZoomIn(); }}
-                  onTouchStart={(e) => { e.preventDefault(); handleZoomIn(); }}
-                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  onClick={handleZoomIn}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer"
                   title={`Zoom In (${zoomLevel}%)`}
                 >
                   <ZoomIn className="w-4 h-4" />
@@ -2381,6 +2243,21 @@ export default function App() {
               {noteEditMode === 'read' ? <BookOpen className="w-5 h-5 text-neutral-955" /> : <Eye className="w-5 h-5 text-neutral-955" />}
             </button>
 
+            {/* Subtle corner Auto-save notification badge */}
+            <div className="fixed bottom-6 left-6 z-40 pointer-events-none transition-all duration-300">
+              {saveStatus === 'saving' ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/90 text-[10px] font-bold text-neutral-200 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-pulse animate-fade-in">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/80 text-[10px] font-semibold text-neutral-300 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-fade-in">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
+                  <span>Draft Saved</span>
+                </div>
+              )}
+            </div>
+
             <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex justify-center p-4 sm:p-8 select-text relative">
               
               {/* Note paper sheet wrapping layer */}
@@ -2393,23 +2270,10 @@ export default function App() {
               >
                 
                 {/* Optional brief details metadata overlay panel inside paper */}
-                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-start shadow-sm">
                   <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25]">
                     <Clock className="w-3.5 h-3.5 text-[#5d8f25]" />
                     <span>Last edited {activeNote && formatDateStr(activeNote.updatedAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 select-none font-mono text-[9px] uppercase tracking-wider">
-                    {saveStatus === 'saving' ? (
-                      <span className="flex items-center gap-1 text-amber-500 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        Saving
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[#5d8f25] font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
-                        Saved
-                      </span>
-                    )}
                   </div>
                 </div>
 

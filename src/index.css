@@ -17,14 +17,6 @@ html, body {
   background-color: #FAF9F6;
   color: #000000;
   font-family: "Courier Prime", "Courier New", monospace !important;
-  overscroll-behavior: none !important;
-  overscroll-behavior-y: none !important;
-  overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  height: 100dvh !important;
-  top: 0;
-  left: 0;
 }
 
 /* Custom Scrollbars matching Simbi theme */
@@ -138,10 +130,7 @@ header p {
   background-color: #FFFFFF !important;
   border: 1px solid #e5e5e5 !important;
   box-shadow: 0 4px 14px rgba(151,204,91,0.06) !important;
-  border-top-left-radius: 0px !important;
-  border-top-right-radius: 0px !important;
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
+  border-radius: 12px !important;
 }
 
 .group.bg-neutral-900:hover {
