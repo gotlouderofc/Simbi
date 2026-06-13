@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Home,
   ArrowRight,
+  ArrowLeft,
   Bold,
   Italic,
   AlignLeft,
@@ -1484,10 +1485,118 @@ export default function App() {
       </div>
 
       {currentScriptId === null && currentNoteId === null ? (
-        // ============================================
-        // CATALOGUE HOME SCREEN
-        // ============================================
-        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
+        isAppSettingsOpen ? (
+          // ============================================
+          // APP SUMMARY & SYSTEM SETTINGS SCREEN (PAGE)
+          // ============================================
+          <div className="flex-1 flex flex-col bg-[#FAF9F6] select-text overflow-y-auto w-full animate-fade-in">
+            <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsAppSettingsOpen(false)}
+                    className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer border border-neutral-200"
+                    title="Back to Catalogue"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-[#97cc5b] animate-[spin_15s_linear_infinite]" />
+                    <h1 className="text-xl font-bold tracking-tight text-neutral-900">
+                      Settings
+                    </h1>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAppSettingsOpen(false)}
+                  className="text-xs font-bold text-[#5d8f25] hover:underline cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </header>
+
+            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+              {/* Top Section with App Details & Offline info */}
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800 mb-2">Simbi Environment</h2>
+                <p className="text-xs text-neutral-500 leading-relaxed max-w-2xl mb-4">
+                  Simbi is a fully offline-first screenplay and creative conceptualization environment. All screenplays and ideas notes are stored securely on your browser's internal local database. No cloud accounts required.
+                </p>
+                <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-4 text-amber-900 space-y-2">
+                  <span className="text-xs font-bold block">Offline Local Storage & Cache Status</span>
+                  <p className="text-xs text-amber-700 leading-relaxed font-normal">
+                    Everything you write is saved in real-time. When you have no connection, your writing, formatting, templates, and tools remain completely accessible.
+                  </p>
+                </div>
+              </div>
+
+              {/* Reset application panel */}
+              <div className="bg-rose-50/30 border border-rose-100 rounded-2xl p-6 shadow-sm space-y-4">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-rose-800 mb-1">System Control & Reset</h2>
+                  <p className="text-xs text-rose-600">
+                    Purges all browser memory, local drafts, cached templates, and retrieves the latest service worker code from the network.
+                  </p>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (confirm("Are you sure you want to reset Simbi? This clears all personal drafts, restores original sample documents, purges browser caches, and forces service workers to fetch fresh updates from the server.")) {
+                      // Clear localStorage
+                      localStorage.removeItem('screenwriter_scripts');
+                      localStorage.removeItem('screenwriter_notes');
+
+                      // Clear Cache API
+                      if ('caches' in window) {
+                        try {
+                          const keys = await caches.keys();
+                          await Promise.all(keys.map(key => caches.delete(key)));
+                        } catch (e) {
+                          console.error('Failed to clear cache API:', e);
+                        }
+                      }
+
+                      // Unregister Service Workers
+                      if ('serviceWorker' in navigator) {
+                        try {
+                          const regs = await navigator.serviceWorker.getRegistrations();
+                          await Promise.all(regs.map(reg => reg.unregister()));
+                        } catch (e) {
+                          console.error('Failed to unregister SW:', e);
+                        }
+                      }
+
+                      // Hard reload from web with cache buster to force re-cache
+                      window.location.href = window.location.origin + '?reset=' + Date.now();
+                    }
+                  }}
+                  className="py-2.5 px-5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Reset All App Data</span>
+                </button>
+              </div>
+
+              {/* About section placeholder */}
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-3">
+                <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">About Simbi</h2>
+                <div className="text-xs text-neutral-500 leading-relaxed space-y-2">
+                  <p>
+                    [ This is a placeholder for the About Simbi section. You will be able to customize this block of text with credentials, licenses, version indicators, and credit highlights later. ]
+                  </p>
+                  <p className="font-mono text-[10px] text-neutral-400">
+                     Version 1.2.0 (Stable Cache-PWA Native Build)
+                  </p>
+                </div>
+              </div>
+            </main>
+          </div>
+        ) : (
+          // ============================================
+          // CATALOGUE HOME SCREEN
+          // ============================================
+          <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
           {/* Main Top Header bar */}
           <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -1718,87 +1827,9 @@ export default function App() {
           >
             <Settings className="w-4 h-4 animate-[spin_10s_linear_infinite]" />
           </button>
-
-          {/* App Settings Modal Overlay */}
-          {isAppSettingsOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-md select-none animate-fade-in">
-              <div className="bg-white border border-neutral-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-neutral-900 animate-scale-up">
-                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-[#97cc5b]" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-neutral-700">App Settings</h3>
-                  </div>
-                  <button
-                    onClick={() => setIsAppSettingsOpen(false)}
-                    className="p-1 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-600 transition cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="py-5 space-y-4">
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Configure your Simbi offline writing environment or trigger a complete system reset.
-                  </p>
-
-                  <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-3.5 space-y-2">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-amber-800 block">Offline Status & Storage</span>
-                    <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
-                      All screenplays and notes are saved locally to your device's browser memory. Simbi operates fully without internet.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-neutral-100 flex flex-col gap-2">
-                  <button
-                    onClick={async () => {
-                      if (confirm("Are you sure you want to reset Simbi? This clears all personal drafts, restores original sample documents, purges browser caches, and forces service workers to fetch fresh updates from the server.")) {
-                        // Clear localStorage
-                        localStorage.removeItem('screenwriter_scripts');
-                        localStorage.removeItem('screenwriter_notes');
-
-                        // Clear Cache API
-                        if ('caches' in window) {
-                          try {
-                            const keys = await caches.keys();
-                            await Promise.all(keys.map(key => caches.delete(key)));
-                          } catch (e) {
-                            console.error('Failed to clear cache API:', e);
-                          }
-                        }
-
-                        // Unregister Service Workers
-                        if ('serviceWorker' in navigator) {
-                          try {
-                            const regs = await navigator.serviceWorker.getRegistrations();
-                            await Promise.all(regs.map(reg => reg.unregister()));
-                          } catch (e) {
-                            console.error('Failed to unregister SW:', e);
-                          }
-                        }
-
-                        // Hard reload from web with cache buster to force re-cache
-                        window.location.href = window.location.origin + '?reset=' + Date.now();
-                      }
-                    }}
-                    className="w-full py-2 px-4 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-500 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Reset App
-                  </button>
-                  
-                  <button
-                    onClick={() => setIsAppSettingsOpen(false)}
-                    className="w-full py-2 px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition cursor-pointer"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      ) : currentScriptId !== null ? (
+      )
+    ) : currentScriptId !== null ? (
         // ============================================
         // SCRIPT EDITOR WORKSPACE
         // ============================================
@@ -1831,12 +1862,12 @@ export default function App() {
           {/* Core Drafting Split Board Layout */}
           <div className="flex-1 flex min-h-0 relative overflow-hidden">
             
-            {/* Top-Bar Overlay Custom Formatting Plugin Modal */}
+            {/* Bottom-Bar Overlay Custom Formatting Plugin (Spawns above formatting bottom bar) */}
             <div 
-              className={`absolute left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-1.5 sm:p-2 shadow-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ease-in-out select-none max-w-[95vw] sm:max-w-none ${
+              className={`fixed left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-300 rounded-2xl p-1.5 sm:p-2 shadow-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ease-in-out select-none max-w-[95vw] sm:max-w-none ${
                 isExtensionModalOpen 
-                  ? 'top-4 opacity-100 scale-100 pointer-events-auto shadow-2xl' 
-                  : '-top-24 opacity-0 scale-95 pointer-events-none'
+                  ? 'bottom-18 sm:bottom-20 md:bottom-22 opacity-100 scale-100 pointer-events-auto shadow-2xl' 
+                  : '-bottom-32 opacity-0 scale-95 pointer-events-none'
               }`}
             >
               <div className="flex items-center gap-1">
@@ -1968,15 +1999,6 @@ export default function App() {
               />
             </div>
 
-            {/* Sidebar trigger switch pin button */}
-            <button
-               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-               className="fixed bottom-6 left-6 z-40 p-3 bg-white text-[#5d8f25] hover:bg-neutral-100 border border-neutral-300 rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center font-bold"
-               title="Toggle Screenplay Navigator"
-            >
-              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-
             {/* Main scroll editor workspace */}
             <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex justify-center p-3 sm:p-6 select-text relative">
               
@@ -1992,9 +2014,15 @@ export default function App() {
                 {/* Meta details config badge block inside the main canvas */}
                 <div className="mb-6 w-full max-w-[650px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between select-none shadow-md shadow-[#97cc5b]/5">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#97cc5b]/10 rounded-lg text-[#5d8f25]">
-                      <Settings className="w-4 h-4" />
-                    </div>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onTouchStart={(e) => e.preventDefault()}
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                      className="p-2 bg-[#97cc5b]/10 hover:bg-[#97cc5b]/20 text-[#5d8f25] rounded-lg transition duration-150 cursor-pointer flex items-center justify-center font-fold"
+                      title="Toggle Screenplay Navigator"
+                    >
+                      <Menu className="w-4 h-4" />
+                    </button>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2097,14 +2125,14 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Floating Vertical Formatting Toolbar on the Right side of the window */}
+              {/* Floating Horizontal Formatting Bottom Bar - Prominently sticky at screen bottom */}
               <div 
-                className={`fixed right-3 sm:right-6 bottom-6 h-fit z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[calc(100dvh-80px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
+                className={`fixed left-1/2 -translate-x-1/2 bottom-5 sm:bottom-6 z-40 bg-white border border-neutral-200 p-1.5 sm:p-2 rounded-2xl flex flex-row items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-w-[calc(100vw-32px)] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden shrink-0 select-none transition-all duration-300 ease-in-out ${
                   isScriptRightFormattingOpen 
-                    ? 'translate-x-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
-                    : 'translate-x-[200%] opacity-0 pointer-events-none scale-95'
+                    ? 'translate-y-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
+                    : 'translate-y-[200%] opacity-0 pointer-events-none scale-95'
                 }`}
-                title="Format Selection Sidebar"
+                title="Format Selection Bottom Bar"
               >
                 {formattingOptions.map(opt => {
                   const isActive = currentSelectionFormat === opt.format;
@@ -2131,7 +2159,7 @@ export default function App() {
                   );
                 })}
 
-                <div className="w-6 h-px bg-neutral-200 my-0.5 shrink-0" />
+                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
 
                 {/* Puzzle piece plugin extension button */}
                 <button
@@ -2241,14 +2269,13 @@ export default function App() {
 
           {/* Editor Workspace flex wrapper for sidebar + main */}
           <div className="flex-1 flex min-h-0 relative">
-            
-             {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
+                    {/* Slim Floating Formatting Bottom Bar (Icons Only) */}
             {noteEditMode === 'edit' && (
               <div 
-                className={`fixed bottom-6 h-fit z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-2xl shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 max-h-[calc(100dvh-80px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden transition-all duration-300 ease-in-out select-none ${
+                className={`fixed left-1/2 -translate-x-1/2 bottom-5 sm:bottom-6 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 sm:p-2 rounded-2xl shadow-lg flex flex-row items-center gap-2 max-w-[calc(100vw-32px)] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden shrink-0 transition-all duration-300 ease-in-out select-none ${
                   isNoteSidebarOpen 
-                    ? 'left-4 opacity-100 scale-100 pointer-events-auto shadow-xl' 
-                    : '-left-16 opacity-0 scale-95 pointer-events-none'
+                    ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' 
+                    : 'translate-y-[200%] opacity-0 scale-95 pointer-events-none'
                 }`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -2272,7 +2299,7 @@ export default function App() {
                   <Italic className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
+                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
 
                 {/* Left alignment */}
                 <button
@@ -2304,7 +2331,7 @@ export default function App() {
                   <AlignRight className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
+                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
 
                 {/* Reset format */}
                 <button
@@ -2316,7 +2343,7 @@ export default function App() {
                   <RemoveFormatting className="w-4 h-4" />
                 </button>
 
-                <div className="w-5 h-px bg-neutral-200 my-0.5 shrink-0" />
+                <div className="h-6 w-px bg-neutral-200 mx-1 shrink-0" />
 
                 {/* Zoom Out */}
                 <button
@@ -2329,7 +2356,7 @@ export default function App() {
                 </button>
 
                 {/* Zoom display */}
-                <span className="text-[9px] font-mono font-bold text-neutral-500 select-none shrink-0">
+                <span className="text-[10px] font-mono font-bold text-neutral-500 select-none shrink-0 px-1">
                   {zoomLevel}%
                 </span>
 

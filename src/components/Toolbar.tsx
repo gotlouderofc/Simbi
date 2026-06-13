@@ -129,7 +129,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Toggle Formatting Sidebar button (Pen Icon) */}
         <button
-          onClick={onToggleRightSidebar}
+          onMouseDown={(e) => { e.preventDefault(); onToggleRightSidebar(); }}
+          onTouchStart={(e) => { e.preventDefault(); onToggleRightSidebar(); }}
           className={`p-1.5 rounded-md transition cursor-pointer flex items-center justify-center border ${
             isRightSidebarOpen 
               ? 'bg-[#97cc5b]/20 border-[#97cc5b]/40 text-[#97cc5b] hover:bg-[#97cc5b]/30' 
