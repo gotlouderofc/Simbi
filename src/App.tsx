@@ -169,6 +169,7 @@ export default function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [sharingItem, setSharingItem] = useState<any>(null);
   const [sharingType, setSharingType] = useState<'script' | 'note' | null>(null);
+  const [isAppSettingsOpen, setIsAppSettingsOpen] = useState<boolean>(false);
 
   // Autofocus synchronization state variables
   const pendingFocusRef = useRef<{ index: number; caretPosition: 'start' | 'end' | number } | null>(null);
@@ -1524,7 +1525,7 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3 mb-8">
               <div className="flex items-center gap-2 shrink-0">
                 <BookOpen className="w-4 h-4 text-[#97cc5b] shrink-0" />
-                <h2 className="text-xs sm:text-sm font-black uppercase text-neutral-600 tracking-wider whitespace-nowrap">Dear Storyteller</h2>
+                <h2 className="text-[10px] sm:text-xs font-black uppercase text-neutral-600 tracking-wider whitespace-nowrap">Dear Storyteller</h2>
               </div>
               <div className="flex items-center gap-2">
                 {/* Hidden browser PDF / SimbiDoc upload input */}
@@ -1712,6 +1713,94 @@ export default function App() {
               );
             })()}
           </main>
+
+          {/* Sticky floating Settings icon on bottom-left, transparent background */}
+          <button
+            onClick={() => setIsAppSettingsOpen(true)}
+            className="fixed bottom-4 left-4 z-40 p-2 text-neutral-400 hover:text-neutral-700 bg-transparent rounded-full hover:bg-neutral-200/40 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border border-transparent hover:border-neutral-200/30 shadow-none hover:shadow-xs"
+            title="App Settings"
+          >
+            <Settings className="w-4 h-4 animate-[spin_10s_linear_infinite]" />
+          </button>
+
+          {/* App Settings Modal Overlay */}
+          {isAppSettingsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/40 backdrop-blur-md select-none animate-fade-in">
+              <div className="bg-white border border-neutral-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-neutral-900 animate-scale-up">
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-[#97cc5b]" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-neutral-700">App Settings</h3>
+                  </div>
+                  <button
+                    onClick={() => setIsAppSettingsOpen(false)}
+                    className="p-1 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-600 transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="py-5 space-y-4">
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Configure your Simbi offline writing environment or trigger a complete system reset.
+                  </p>
+
+                  <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-3.5 space-y-2">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-amber-800 block">Offline Status & Storage</span>
+                    <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
+                      All screenplays and notes are saved locally to your device's browser memory. Simbi operates fully without internet.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-neutral-100 flex flex-col gap-2">
+                  <button
+                    onClick={async () => {
+                      if (confirm("Are you sure you want to reset Simbi? This clears all personal drafts, restores original sample documents, purges browser caches, and forces service workers to fetch fresh updates from the server.")) {
+                        // Clear localStorage
+                        localStorage.removeItem('screenwriter_scripts');
+                        localStorage.removeItem('screenwriter_notes');
+
+                        // Clear Cache API
+                        if ('caches' in window) {
+                          try {
+                            const keys = await caches.keys();
+                            await Promise.all(keys.map(key => caches.delete(key)));
+                          } catch (e) {
+                            console.error('Failed to clear cache API:', e);
+                          }
+                        }
+
+                        // Unregister Service Workers
+                        if ('serviceWorker' in navigator) {
+                          try {
+                            const regs = await navigator.serviceWorker.getRegistrations();
+                            await Promise.all(regs.map(reg => reg.unregister()));
+                          } catch (e) {
+                            console.error('Failed to unregister SW:', e);
+                          }
+                        }
+
+                        // Hard reload from web with cache buster to force re-cache
+                        window.location.href = window.location.origin + '?reset=' + Date.now();
+                      }
+                    }}
+                    className="w-full py-2 px-4 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-500 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Reset App
+                  </button>
+                  
+                  <button
+                    onClick={() => setIsAppSettingsOpen(false)}
+                    className="w-full py-2 px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : currentScriptId !== null ? (
         // ============================================
