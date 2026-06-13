@@ -2099,7 +2099,7 @@ export default function App() {
 
               {/* Floating Vertical Formatting Toolbar on the Right side of the window */}
               <div 
-                className={`fixed right-3 sm:right-5 top-20 bottom-24 my-auto h-fit z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[calc(100dvh-176px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
+                className={`fixed right-3 sm:right-6 bottom-6 h-fit z-40 bg-white border border-neutral-200 p-2 rounded-2xl flex flex-col items-center gap-2 shadow-xl shadow-[#97cc5b]/5 max-h-[calc(100dvh-80px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden w-14 shrink-0 select-none transition-all duration-300 ease-in-out ${
                   isScriptRightFormattingOpen 
                     ? 'translate-x-0 opacity-100 pointer-events-auto shadow-2xl scale-100' 
                     : 'translate-x-[200%] opacity-0 pointer-events-none scale-95'
@@ -2242,10 +2242,10 @@ export default function App() {
           {/* Editor Workspace flex wrapper for sidebar + main */}
           <div className="flex-1 flex min-h-0 relative">
             
-            {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
+             {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
             {noteEditMode === 'edit' && (
               <div 
-                className={`fixed left-4 top-20 bottom-24 my-auto h-fit z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-2xl shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 max-h-[calc(100dvh-176px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden transition-all duration-300 ease-in-out select-none ${
+                className={`fixed bottom-6 h-fit z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-2xl shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 max-h-[calc(100dvh-80px)] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden transition-all duration-300 ease-in-out select-none ${
                   isNoteSidebarOpen 
                     ? 'left-4 opacity-100 scale-100 pointer-events-auto shadow-xl' 
                     : '-left-16 opacity-0 scale-95 pointer-events-none'
