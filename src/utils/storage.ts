@@ -34,62 +34,24 @@ const SAMPLE_SCRIPT: Script = {
   ]
 };
 
-const SAMPLE_SCRIPT_2: Script = {
-  id: 'sample_things_fall_apart',
-  title: 'Things Fall Apart',
-  writer: 'Edward Nwoji',
-  email: 'edward.nwoji@igbolandworks.org',
-  phone: '+234 803 111 2222',
-  address: 'Umuofia Village Compound\nAnambra State, Nigeria',
-  notes: 'ADAPTATION STATEMENT: This screenplay is adapted from Chinua Achebe\'s timeless magnum opus "Things Fall Apart". It illustrates the collision of culture, family unit transitions, and traditional tribal friction in Umuofia.',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  content: [
-    { id: 't1', format: 'scene-heading', text: 'EXT. OKONKWO\'S compound - LATE AFTERNOON' },
-    { id: 't2', format: 'action', text: 'A cluster of three mud huts stands proudly surrounded by a red earth wall. OKONKWO (30s, tall, huge, with a severe face that seems always on the verge of a fight) stands proudly reviewing his massive yam barn.' },
-    { id: 't3', format: 'character', text: 'OKONKWO' },
-    { id: 't4', format: 'parenthetical', text: 'muttering under his breath, evaluating a giant tuber' },
-    { id: 't5', format: 'dialogue', text: 'The harvest is the spine of a warrior. If a man cannot feed his wives and children, he is empty. He is like Unoka.' },
-    { id: 't6', format: 'action', text: 'NWOYE (12, quiet, sensitive) enters holding a bundle of dry palm branches. He shrinks slightly under his father’s sharp eyes.' },
-    { id: 't7', format: 'character', text: 'OKONKWO' },
-    { id: 't8', format: 'dialogue', text: 'Nwoye! Have you stacked the dry palm logs behind the main obi?' },
-    { id: 't9', format: 'character', text: 'NWOYE' },
-    { id: 't10', format: 'dialogue', text: 'Yes, father. I have double-tied them. They are dry for tonight\'s fire.' },
-    { id: 't11', format: 'transition', text: 'FADE TO:' },
-    { id: 't12', format: 'scene-heading', text: 'INT. OKONKWO\'S OBI - NIGHT' },
-    { id: 't13', format: 'action', text: 'Rhythmic crickets sing in the tall grass outside. A warm fire glows in the middle of the room. IKEMEFUNA (15, captured child of Mbaino) sits on a solid goatskin, helping Nwoye shell dry corn kernels.' },
-    { id: 't14', format: 'character', text: 'IKEMEFUNA' },
-    { id: 't15', format: 'parenthetical', text: 'whispering to Nwoye' },
-    { id: 't16', format: 'dialogue', text: 'In my village, the elderly say that during solar eclipses, the cosmic sky spirit is catching a giant shadow bird in its palm.' },
-    { id: 't17', format: 'action', text: 'Okonkwo enters, carrying his drinking horn. He sits on his raised earthen bank. He watches them. His expression softens for a fraction of a second, then hardens again to maintain his iron authority.' },
-    { id: 't18', format: 'character', text: 'OKONKWO' },
-    { id: 't19', format: 'dialogue', text: 'Idle talk yields idle hands. Shell your crop. Tomorrow we clear the thick bush of the sacred grove.' },
-    { id: 't20', format: 'transition', text: 'CUT TO:' },
-    { id: 't21', format: 'scene-heading', text: 'EXT. VILLAGE ILLUSTRIOUS GROUND (ILOGU) - DAY' },
-    { id: 't22', format: 'action', text: 'Hundreds of villagers form an intense human circle. The booming throb of ancient big drums shakes the canopy trees. Two powerful wrestlers, bodies slick with oil and sweat, circle each other in the dusty center.' },
-    { id: 't23', format: 'shot', text: 'LOW CLOSE-UP SHOT' },
-    { id: 't24', format: 'action', text: 'The crowd roars "Okonkwo! The Cat!" as the memories of Okonkwo throwing Amalinze the Cat in his youth echo in the village drumming rhythm.' }
-  ]
-};
-
 export const Storage = {
   getScripts(): Script[] {
     try {
       const stored = localStorage.getItem('screenwriter_scripts');
       if (!stored) {
-        // Initialize with both sample scripts
-        const scripts = [SAMPLE_SCRIPT, SAMPLE_SCRIPT_2];
+        // Initialize with sample script
+        const scripts = [SAMPLE_SCRIPT];
         localStorage.setItem('screenwriter_scripts', JSON.stringify(scripts));
         return scripts;
       }
-      const parsed = JSON.parse(stored) as Script[];
-      if (!parsed.some((s) => s.id === 'sample_things_fall_apart')) {
-        parsed.push(SAMPLE_SCRIPT_2);
+      let parsed = JSON.parse(stored) as Script[];
+      if (parsed.some((s) => s.id === 'sample_things_fall_apart')) {
+        parsed = parsed.filter((s) => s.id !== 'sample_things_fall_apart');
         localStorage.setItem('screenwriter_scripts', JSON.stringify(parsed));
       }
       return parsed;
     } catch {
-      return [SAMPLE_SCRIPT, SAMPLE_SCRIPT_2];
+      return [SAMPLE_SCRIPT];
     }
   },
 

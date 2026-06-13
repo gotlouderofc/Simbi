@@ -194,6 +194,61 @@ export default function App() {
   const activeNoteRef = useRef<IdeaNote | null>(null);
   activeNoteRef.current = activeNote;
 
+  const activeScriptRef = useRef<Script | null>(null);
+  activeScriptRef.current = activeScript;
+  const linesRef = useRef<any[]>([]);
+  linesRef.current = lines;
+
+  // Keep history synced for back-button navigation
+  useEffect(() => {
+    // Tag initial page as home state if not set
+    if (!window.history.state) {
+      window.history.replaceState({ page: 'home' }, '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      // If we popped and the new state is NOT 'editor' (i.e. went back to home)
+      if (!state || state.page !== 'editor') {
+        // 1. Is script editor open?
+        if (activeScriptRef.current) {
+          const finalScript = {
+            ...activeScriptRef.current,
+            content: linesRef.current,
+            updatedAt: new Date().toISOString()
+          };
+          Storage.saveScript(finalScript);
+          
+          setCurrentScriptId(null);
+          setActiveScript(null);
+          setLines([]);
+          refreshScripts();
+        }
+
+        // 2. Is note editor open?
+        if (activeNoteRef.current) {
+          const el = document.getElementById('freeform-note-editor') as HTMLDivElement;
+          const htmlContent = el ? el.innerHTML : activeNoteRef.current.content;
+          const finalNote = {
+            ...activeNoteRef.current,
+            content: htmlContent,
+            updatedAt: new Date().toISOString()
+          };
+          Storage.saveNote(finalNote);
+          
+          setCurrentNoteId(null);
+          setActiveNote(null);
+          refreshScripts();
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now().toString() + Math.random().toString();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -221,6 +276,10 @@ export default function App() {
       historyIndexRef.current = 0;
       lastSavedJsonRef.current = JSON.stringify(script.content);
       
+      if (window.history.state?.page !== 'editor') {
+        window.history.pushState({ page: 'editor' }, '');
+      }
+
       showToast(`Loaded "${script.title}"`, 'success');
     } else {
       showToast('Could not load script details.', 'error');
@@ -229,19 +288,23 @@ export default function App() {
 
   // Close script editor and back to catalogue
   const handleCloseEditor = () => {
-    if (activeScript) {
-      // Final save
-      const finalScript = {
-        ...activeScript,
-        content: lines,
-        updatedAt: new Date().toISOString()
-      };
-      Storage.saveScript(finalScript);
+    if (window.history.state?.page === 'editor') {
+      window.history.back();
+    } else {
+      if (activeScript) {
+        // Final save
+        const finalScript = {
+          ...activeScript,
+          content: lines,
+          updatedAt: new Date().toISOString()
+        };
+        Storage.saveScript(finalScript);
+      }
+      setCurrentScriptId(null);
+      setActiveScript(null);
+      setLines([]);
+      refreshScripts();
     }
-    setCurrentScriptId(null);
-    setActiveScript(null);
-    setLines([]);
-    refreshScripts();
   };
 
   // Manual save trigger
@@ -736,6 +799,11 @@ export default function App() {
       setCurrentNoteId(id);
       setNoteEditMode('edit');
       lastSavedJsonRef.current = note.content || '';
+      
+      if (window.history.state?.page !== 'editor') {
+        window.history.pushState({ page: 'editor' }, '');
+      }
+
       showToast(`Loaded "${note.title}"`, 'success');
     } else {
       showToast('Could not load note details.', 'error');
@@ -744,19 +812,23 @@ export default function App() {
 
   // Close note and back to portfolio
   const handleCloseNoteEditor = () => {
-    if (activeNote) {
-      const el = document.getElementById('freeform-note-editor') as HTMLDivElement;
-      const htmlContent = el ? el.innerHTML : activeNote.content;
-      const finalNote = {
-        ...activeNote,
-        content: htmlContent,
-        updatedAt: new Date().toISOString()
-      };
-      Storage.saveNote(finalNote);
+    if (window.history.state?.page === 'editor') {
+      window.history.back();
+    } else {
+      if (activeNote) {
+        const el = document.getElementById('freeform-note-editor') as HTMLDivElement;
+        const htmlContent = el ? el.innerHTML : activeNote.content;
+        const finalNote = {
+          ...activeNote,
+          content: htmlContent,
+          updatedAt: new Date().toISOString()
+        };
+        Storage.saveNote(finalNote);
+      }
+      setCurrentNoteId(null);
+      setActiveNote(null);
+      refreshScripts();
     }
-    setCurrentNoteId(null);
-    setActiveNote(null);
-    refreshScripts();
   };
 
   // Manual save for active note
@@ -1522,71 +1594,57 @@ export default function App() {
               }
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {portfolioItems.map((item) => {
                     if (item.itemType === 'script') {
                       return (
                         <div
                           key={item.id}
                           onClick={() => handleOpenScript(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-5 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-amber-500/60 ring-amber-500/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-amber-500/20">
                               Screenplay 🎥
                             </span>
                             {/* Script title heading */}
-                            <h3 className="text-base font-bold text-neutral-200 group-hover:text-amber-400 transition truncate pr-20 pt-1">
+                            <h3 className="text-sm font-bold text-neutral-200 group-hover:text-amber-400 transition truncate pr-20 pt-1">
                               {item.title || 'Untitled screenplay'}
                             </h3>
-                            {/* Screenwriter details */}
-                            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1.5 font-medium">
-                              <User className="w-3.5 h-3.5 text-neutral-600" />
-                              by {item.writer || 'Unknown writer'}
+                            {/* Simplified smaller date */}
+                            <p className="text-[10px] text-neutral-500 mt-1">
+                              {formatDateStr(item.updatedAt)}
                             </p>
-
-                            {/* Script specs and updates */}
-                            <div className="flex items-center gap-4 text-[10px] text-neutral-500 mt-6 pt-4 border-t border-neutral-800/40 font-mono">
-                              <span className="flex items-center gap-1">
-                                <Hash className="w-3 h-3 text-neutral-600" />
-                                <span>{getPagesCount(item as Script)} {getPagesCount(item as Script) === 1 ? 'page' : 'pages'}</span>
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-neutral-600" />
-                                <span>Saved {formatDateStr(item.updatedAt)}</span>
-                              </span>
-                            </div>
                           </div>
-
+ 
                           {/* Desktop Hover card actions list */}
-                          <div className="flex items-center gap-2 mt-5 pt-3 border-t border-neutral-800/60 w-full" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-2 mt-3.5 pt-2.5 border-t border-neutral-800/50 w-full" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => handleOpenScript(item.id)}
-                              className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 rounded-[#cee7aa] rounded-md text-[11px] font-semibold cursor-pointer transition border border-neutral-750"
+                              className="flex-1 flex items-center justify-center gap-1 py-1 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 rounded-md text-[11px] font-semibold cursor-pointer transition border border-neutral-750"
                             >
                               Open Draft
                             </button>
                             <button
                               onClick={() => handleOpenShare(item, 'script')}
-                              className="p-1.5 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500"
                               title="Share Screenplay Link"
                             >
-                              <Share2 className="w-4 h-4" />
+                              <Share2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleExportPDF(item as Script)}
-                              className="p-1.5 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500"
                               title="Download PDF"
                             >
-                              <Printer className="w-4 h-4" />
+                              <Printer className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDeleteScript(item.id, item.title)}
-                              className="p-1.5 hover:bg-rose-950/60 hover:text-rose-400 rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-rose-950/60 hover:text-rose-400 rounded-md transition text-neutral-500"
                               title="Delete screen file"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1596,63 +1654,54 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleOpenNote(item.id)}
-                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-5 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
+                          className="group bg-neutral-900 border border-neutral-800/80 rounded-xl p-4 hover:border-[#97cc5b]/60 ring-[#97cc5b]/20 hover:ring-2 cursor-pointer transition flex flex-col relative select-none"
                         >
                           <div className="flex-1">
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-[#97cc5b]/10 text-[#97cc5b] rounded-md text-[9px] font-black uppercase tracking-wider border border-[#97cc5b]/20">
                               Ideas Note 💡
                             </span>
                             {/* Note title heading */}
-                            <h3 className="text-base font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
+                            <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
                               {item.title || 'Untitled note'}
                             </h3>
                             {/* Description text */}
-                            <p className="text-xs text-neutral-400 mt-2 line-clamp-2 italic font-normal">
+                            <p className="text-xs text-neutral-400 mt-1 line-clamp-1 italic font-normal">
                               {item.description || 'No description provided.'}
                             </p>
-
-                            {/* Detail specs and updates */}
-                            <div className="flex items-center gap-4 text-[10px] text-neutral-500 mt-6 pt-4 border-t border-neutral-800/40 font-mono">
-                              <span className="flex items-center gap-1">
-                                <BookOpen className="w-3 h-3 text-neutral-600" />
-                                <span>Freeform Document</span>
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-neutral-600" />
-                                <span>Saved {formatDateStr(item.updatedAt)}</span>
-                              </span>
-                            </div>
+                            {/* Simplified smaller date */}
+                            <p className="text-[10px] text-neutral-500 mt-1">
+                              {formatDateStr(item.updatedAt)}
+                            </p>
                           </div>
-
+ 
                           {/* Hover card actions list */}
-                          <div className="flex items-center gap-2 mt-5 pt-3 border-t border-neutral-800/60 w-full" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-2 mt-3.5 pt-2.5 border-t border-neutral-800/50 w-full" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => handleOpenNote(item.id)}
-                              className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 rounded-[#cee7aa] rounded-md text-[11px] font-semibold cursor-pointer transition border border-neutral-750"
+                              className="flex-1 flex items-center justify-center gap-1 py-1 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 rounded-md text-[11px] font-semibold cursor-pointer transition border border-neutral-750"
                             >
                               Open Note
                             </button>
                             <button
                               onClick={() => handleOpenShare(item, 'note')}
-                              className="p-1.5 hover:bg-neutral-800 hover:text-[#97cc5b] rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-neutral-800 hover:text-[#97cc5b] rounded-md transition text-neutral-500"
                               title="Share Idea Note"
                             >
-                              <Share2 className="w-4 h-4" />
+                              <Share2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleExportNotePDF(item as IdeaNote)}
-                              className="p-1.5 hover:bg-neutral-800 hover:text-[#97cc5b] rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-neutral-800 hover:text-[#97cc5b] rounded-md transition text-neutral-500"
                               title="Download PDF"
                             >
-                              <Printer className="w-4 h-4" />
+                              <Printer className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDeleteNote(item.id, item.title)}
-                              className="p-1.5 hover:bg-rose-950/60 hover:text-rose-400 rounded-md transition text-neutral-500"
+                              className="p-1 hover:bg-rose-950/60 hover:text-rose-400 rounded-md transition text-neutral-500"
                               title="Delete note draft"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
