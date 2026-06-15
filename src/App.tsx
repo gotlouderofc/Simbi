@@ -48,7 +48,9 @@ import {
   Pen,
   Search,
   Share2,
-  Upload
+  Upload,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 
 import { Script, ScreenplayLine, ScreenplayFormat, ToastMessage, IdeaNote } from './types';
@@ -178,6 +180,14 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [modalInitialData, setModalInitialData] = useState<Partial<Script> | undefined>(undefined);
+
+  // External Browser Redirect / Download Assistant State
+  const [activeDownload, setActiveDownload] = useState<{
+    token: string;
+    filename: string;
+    url: string;
+  } | null>(null);
+  const [downloadPrepareLoading, setDownloadPrepareLoading] = useState<boolean>(false);
 
   // Custom persistent notify toast channel
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -366,7 +376,9 @@ export default function App() {
     if (!target) return;
 
     try {
-      PDFExporter.export(target);
+      PDFExporter.export(target, (base64, filename) => {
+        handleExternalFileDownload(base64, filename, true, 'application/pdf');
+      });
       showToast('Successfully generated production PDF', 'success');
     } catch (e) {
       showToast('PDF Export encountered an error.', 'error');
@@ -699,16 +711,80 @@ export default function App() {
     }
   };
 
+  const handleExternalFileDownload = async (
+    content: string,
+    filename: string,
+    isBase64: boolean,
+    contentType: string
+  ) => {
+    setDownloadPrepareLoading(true);
+    try {
+      const response = await fetch('/api/prepare-download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename,
+          content,
+          isBase64,
+          contentType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Preparation API returned error');
+      }
+
+      const data = await response.json();
+      if (data.success && data.downloadUrl) {
+        const absoluteUrl = window.location.origin + data.downloadUrl;
+        
+        setActiveDownload({
+          token: data.token,
+          filename: filename,
+          url: absoluteUrl
+        });
+
+        // Trigger standard external browser popup attempt
+        const newWindow = window.open(absoluteUrl, '_blank');
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn('System browser popup block detected - showing assistant popup helper.');
+        }
+        showToast('External download link generated successfully!', 'success');
+      } else {
+        throw new Error('Invalid download configuration received');
+      }
+    } catch (error) {
+      console.error('Failed to prepare external download:', error);
+      showToast('Redirect prepared locally due to system fallback.', 'info');
+      
+      // Fallback: standard client download
+      if (isBase64) {
+        const link = document.createElement('a');
+        link.href = `data:${contentType};base64,${content}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      setDownloadPrepareLoading(false);
+    }
+  };
+
   const triggerFileDownload = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    handleExternalFileDownload(content, filename, false, 'application/octet-stream');
   };
 
   // Find text occurrences in current screenplay (case-insensitive)
@@ -897,7 +973,9 @@ export default function App() {
     if (!target) return;
 
     try {
-      PDFExporter.exportNote(target);
+      PDFExporter.exportNote(target, (base64, filename) => {
+        handleExternalFileDownload(base64, filename, true, 'application/pdf');
+      });
       showToast('Successfully generated document PDF', 'success');
     } catch (e) {
       showToast('PDF Export encountered an error.', 'error');
@@ -2788,6 +2866,111 @@ export default function App() {
                 Delete Forever
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* External Browser Download Assistant Modal Overlay */}
+      {activeDownload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/75 backdrop-blur-md select-none animate-fade-in">
+          <div 
+            className="bg-white border border-neutral-200 rounded-2xl w-full max-w-md shadow-2xl flex flex-col text-neutral-800 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
+              <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-[#5d8f25]" />
+                <span>Simbi Export Assistant</span>
+              </h3>
+              <button
+                onClick={() => setActiveDownload(null)}
+                className="p-1 hover:bg-neutral-100 hover:text-neutral-800 rounded-md transition text-neutral-400 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5 text-left">
+              {/* Animated Accent Area */}
+              <div className="flex flex-col items-center justify-center p-6 bg-neutral-50 border border-neutral-100 rounded-2xl space-y-3">
+                <div className="w-16 h-16 bg-[#cee7aa]/30 text-[#5d8f25] rounded-full flex items-center justify-center animate-pulse">
+                  <Download className="w-8 h-8" />
+                </div>
+                <h4 className="text-sm font-bold text-neutral-800 text-center truncate max-w-full px-2">
+                  {activeDownload.filename}
+                </h4>
+                <p className="text-[10px] text-neutral-400 font-mono">
+                  READY FOR EXTERNAL DOWNLOAD
+                </p>
+              </div>
+
+              {/* Informative Guidance */}
+              <div className="text-[11px] text-neutral-500 leading-relaxed bg-[#cee7aa]/10 p-4 rounded-xl border border-[#97cc5b]/20 space-y-2">
+                <p className="font-bold text-[#5d8f25] flex items-center gap-1">
+                  <span>🚀</span>
+                  <span>Native App Compatibility Mode:</span>
+                </p>
+                <p>
+                  To bypass native webview and wrapper download limits, we've generated a secure file delivery url that routes file storage directly onto your system browser.
+                </p>
+                <p>
+                  If the download doesn't automatically load, tap the <strong>Download</strong> button below to invoke your system's default browser (Chrome, Safari, etc.) to store the file outside the app environment.
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="flex flex-col gap-2">
+                {/* Primary Anchor Link Button (standard href trigger to trigger external action) */}
+                <a
+                  href={activeDownload.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    showToast('Opening download link outside the app!', 'info');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-xl text-xs font-black shadow-md transition cursor-pointer border border-[#cee7aa] text-center active:scale-95 duration-100 block text-none"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Download file via System Browser</span>
+                </a>
+
+                {/* Second Option: Copy Link to Clipboard */}
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeDownload.url);
+                    showToast('Direct download URL copied to clipboard!', 'success');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition cursor-pointer border border-neutral-200 active:scale-95 duration-100"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Copy Direct Download Address</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end p-4 bg-neutral-50 border-t border-neutral-100">
+              <button
+                onClick={() => setActiveDownload(null)}
+                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-100 rounded-xl text-xs font-bold text-neutral-700 transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prepare Loading Indicator Backdrop */}
+      {downloadPrepareLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-neutral-950/40 backdrop-blur-xs select-none">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center space-y-3 max-w-xs text-center border border-neutral-100">
+            <div className="w-10 h-10 border-4 border-[#97cc5b] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs font-bold text-neutral-800">Preparing Secure Export...</p>
+            <p className="text-[10px] text-neutral-400">Negotiating download certificate with system browser.</p>
           </div>
         </div>
       )}
