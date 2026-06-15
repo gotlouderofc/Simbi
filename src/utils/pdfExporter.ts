@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf';
 import { Script, ScreenplayLine, IdeaNote } from '../types';
 
 export const PDFExporter = {
-  export(script: Script, onSave?: (base64: string, filename: string) => void): void {
+  export(script: Script): void {
     // Standard Letter dimensions: 8.5" x 11" (612pt x 792pt)
     const doc = new jsPDF({
       unit: 'pt',
@@ -265,22 +265,10 @@ export const PDFExporter = {
 
     // Download file
     const safeTitle = script.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'untitled_script';
-    const filename = `${safeTitle}_screenplay.pdf`;
-    
-    if (onSave) {
-      try {
-        const base64 = doc.output('datauristring').split(',')[1];
-        onSave(base64, filename);
-      } catch (err) {
-        console.error('Error generating PDF data URL:', err);
-        doc.save(filename); // Fallback to classic
-      }
-    } else {
-      doc.save(filename);
-    }
+    doc.save(`${safeTitle}_screenplay.pdf`);
   },
 
-  exportNote(note: IdeaNote, onSave?: (base64: string, filename: string) => void): void {
+  exportNote(note: IdeaNote): void {
     const doc = new jsPDF({
       unit: 'pt',
       format: 'letter',
@@ -411,18 +399,6 @@ export const PDFExporter = {
     }
 
     const safeTitle = note.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'untitled_notes';
-    const filename = `${safeTitle}_idea_notes.pdf`;
-    
-    if (onSave) {
-      try {
-        const base64 = doc.output('datauristring').split(',')[1];
-        onSave(base64, filename);
-      } catch (err) {
-        console.error('Error generating PDF data URL for note:', err);
-        doc.save(filename); // Fallback to classic
-      }
-    } else {
-      doc.save(filename);
-    }
+    doc.save(`${safeTitle}_idea_notes.pdf`);
   }
 };

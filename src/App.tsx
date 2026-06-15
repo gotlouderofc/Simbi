@@ -48,11 +48,7 @@ import {
   Pen,
   Search,
   Share2,
-  Upload,
-  ExternalLink,
-  Copy,
-  FolderOpen,
-  CheckCircle
+  Upload
 } from 'lucide-react';
 
 import { Script, ScreenplayLine, ScreenplayFormat, ToastMessage, IdeaNote } from './types';
@@ -174,10 +170,6 @@ export default function App() {
   const [sharingItem, setSharingItem] = useState<any>(null);
   const [sharingType, setSharingType] = useState<'script' | 'note' | null>(null);
 
-  // Clipboard-restore and paste options variables
-  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
-  const [pastedSimbiCode, setPastedSimbiCode] = useState<string>('');
-
   // Autofocus synchronization state variables
   const pendingFocusRef = useRef<{ index: number; caretPosition: 'start' | 'end' | number } | null>(null);
   const [focusTrigger, setFocusTrigger] = useState<number>(0);
@@ -186,17 +178,6 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [modalInitialData, setModalInitialData] = useState<Partial<Script> | undefined>(undefined);
-
-  // External Browser Redirect / Download Assistant State
-  const [activeDownload, setActiveDownload] = useState<{
-    token: string;
-    filename: string;
-    url: string;
-    rawContent?: string;
-    isBase64?: boolean;
-    contentType?: string;
-  } | null>(null);
-  const [downloadPrepareLoading, setDownloadPrepareLoading] = useState<boolean>(false);
 
   // Custom persistent notify toast channel
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -385,9 +366,7 @@ export default function App() {
     if (!target) return;
 
     try {
-      PDFExporter.export(target, (base64, filename) => {
-        handleExternalFileDownload(base64, filename, true, 'application/pdf');
-      });
+      PDFExporter.export(target);
       showToast('Successfully generated production PDF', 'success');
     } catch (e) {
       showToast('PDF Export encountered an error.', 'error');
@@ -679,59 +658,6 @@ export default function App() {
     }
   };
 
-  const handleRestorePastedDoc = () => {
-    if (!pastedSimbiCode.trim()) return;
-    try {
-      const data = JSON.parse(pastedSimbiCode.trim());
-
-      if (data.simbiSign !== "SIMBI_DOCUMENT_v1") {
-        showToast('Invalid Simbi document backup code matching signature.', 'error');
-        return;
-      }
-
-      const type = data.docType;
-      const payload = data.payload;
-
-      if (!payload || !payload.title) {
-        showToast('Missing document payload inside pasted string context.', 'error');
-        return;
-      }
-
-      // Generate a new ID to avoid duplicating identical storage records unless intended
-      const newId = (type === 'script' ? 'script_' : 'note_') + Date.now();
-      const docTitle = payload.title;
-
-      if (type === 'script') {
-        const importedScript: Script = {
-          ...payload,
-          id: newId,
-          createdAt: payload.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        Storage.saveScript(importedScript);
-        refreshScripts();
-        handleOpenScript(newId);
-        showToast(`Pasted screenplay restored successfully: "${docTitle}"`, 'success');
-      } else {
-        const importedNote: IdeaNote = {
-          ...payload,
-          id: newId,
-          createdAt: payload.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        Storage.saveNote(importedNote);
-        refreshScripts();
-        handleOpenNote(newId);
-        showToast(`Pasted workspace note restored successfully: "${docTitle}"`, 'success');
-      }
-      setPastedSimbiCode('');
-      setIsImportModalOpen(false);
-    } catch (err: any) {
-      console.error('SimbiDoc code restore error:', err);
-      showToast('Incompatible formatting or raw JSON detected. Verify your copy source.', 'error');
-    }
-  };
-
   // Share triggers
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
     setSharingItem(item);
@@ -773,124 +699,16 @@ export default function App() {
     }
   };
 
-  const handleExternalFileDownload = async (
-    content: string,
-    filename: string,
-    isBase64: boolean,
-    contentType: string
-  ) => {
-    setDownloadPrepareLoading(true);
-    let cloudId = '';
-
-    // 1. Try uploading to Firebase Firestore for maximum webview/browser delivery compatibility
-    try {
-      const { db, collection, addDoc } = await import('./firebase');
-      const docRef = await addDoc(collection(db, 'shared_docs'), {
-        filename,
-        content,
-        isBase64,
-        contentType,
-        createdAt: new Date().toISOString()
-      });
-      if (docRef && docRef.id) {
-        cloudId = docRef.id;
-        console.log('Firebase Cloud delivery document cached:', cloudId);
-      }
-    } catch (fbErr) {
-      console.warn('Firebase Cloud upload skipped or failed:', fbErr);
-    }
-
-    try {
-      // 2. Prepare local web server download token as fallback/secondary link
-      const response = await fetch('/api/prepare-download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filename,
-          content,
-          isBase64,
-          contentType
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Preparation API returned error');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        // Build final premium https download url. If cloudId is present, we prefer that cloudId over the standard token link!
-        const relativeUrl = cloudId 
-          ? `/api/download?cloudId=${cloudId}` 
-          : data.downloadUrl;
-          
-        const absoluteUrl = window.location.origin + relativeUrl;
-        
-        setActiveDownload({
-          token: cloudId || data.token,
-          filename: filename,
-          url: absoluteUrl,
-          rawContent: content,
-          isBase64: isBase64,
-          contentType: contentType
-        });
-
-        // Trigger native webview window open or helper display
-        const newWindow = window.open(absoluteUrl, '_blank');
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          console.warn('System browser popup block detected - showing assistant popup helper.');
-        }
-        showToast(cloudId ? 'Cloud-backed download ready!' : 'Direct download link generated!', 'success');
-      } else {
-        throw new Error('Invalid download configuration received');
-      }
-    } catch (error) {
-      console.error('Failed to prepare download route:', error);
-      
-      // If we got a cloudId even when server fetch failed, we can still show the modal with the cloudUrl!
-      if (cloudId) {
-        const absoluteUrl = window.location.origin + `/api/download?cloudId=${cloudId}`;
-        setActiveDownload({
-          token: cloudId,
-          filename: filename,
-          url: absoluteUrl,
-          rawContent: content,
-          isBase64: isBase64,
-          contentType: contentType
-        });
-        showToast('Cloud-backed download ready (offline server fallback)!', 'success');
-      } else {
-        showToast('Redirect prepared locally due to system fallback.', 'info');
-        
-        // Final offline fallback: standard client download trigger
-        if (isBase64) {
-          const link = document.createElement('a');
-          link.href = `data:${contentType};base64,${content}`;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } else {
-          const blob = new Blob([content], { type: contentType });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }
-    } finally {
-      setDownloadPrepareLoading(false);
-    }
-  };
-
   const triggerFileDownload = (content: string, filename: string) => {
-    handleExternalFileDownload(content, filename, false, 'application/octet-stream');
+    const blob = new Blob([content], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Find text occurrences in current screenplay (case-insensitive)
@@ -1079,9 +897,7 @@ export default function App() {
     if (!target) return;
 
     try {
-      PDFExporter.exportNote(target, (base64, filename) => {
-        handleExternalFileDownload(base64, filename, true, 'application/pdf');
-      });
+      PDFExporter.exportNote(target);
       showToast('Successfully generated document PDF', 'success');
     } catch (e) {
       showToast('PDF Export encountered an error.', 'error');
@@ -1733,15 +1549,15 @@ export default function App() {
                   <span>Search</span>
                 </button>
 
-                {/* Import dynamic Modal trigger button */}
-                <button
-                  onClick={() => setIsImportModalOpen(true)}
+                {/* Import PDF side-by-side button prompt */}
+                <label
+                  htmlFor="pdf-upload-input"
                   className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white"
-                  title="Import .simbidoc or parse PDF screenplay"
+                  title="Upload screenplay PDF to disassemble"
                 >
                   <Upload className="w-3.5 h-3.5 text-[#5d8f25]" />
-                  <span>Import / Restore</span>
-                </button>
+                  <span>Import</span>
+                </label>
               </div>
             </div>
 
@@ -2972,243 +2788,6 @@ export default function App() {
                 Delete Forever
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* External Browser Download Assistant Modal Overlay */}
-      {activeDownload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/75 backdrop-blur-md select-none animate-fade-in no-print">
-          <div 
-            className="bg-white border border-neutral-200 rounded-2xl w-full max-w-md shadow-2xl flex flex-col text-neutral-800 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
-              <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
-                <ExternalLink className="w-4 h-4 text-[#5d8f25]" />
-                <span>Simbi Export Assistant</span>
-              </h3>
-              <button
-                onClick={() => setActiveDownload(null)}
-                className="p-1 hover:bg-neutral-100 hover:text-neutral-800 rounded-md transition text-neutral-400 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-5 text-left overflow-y-auto max-h-[75vh]">
-              {/* Animated Accent Area */}
-              <div className="flex flex-col items-center justify-center p-6 bg-neutral-50 border border-neutral-100 rounded-2xl space-y-3">
-                <div className="w-16 h-16 bg-[#cee7aa]/30 text-[#5d8f25] rounded-full flex items-center justify-center animate-pulse">
-                  <Download className="w-8 h-8" />
-                </div>
-                <h4 className="text-sm font-bold text-neutral-800 text-center truncate max-w-full px-2">
-                  {activeDownload.filename}
-                </h4>
-                <p className="text-[10px] text-neutral-400 font-mono text-center">
-                  {activeDownload.url.includes('cloudId') ? 'CLOUD BACKED SECURE URL ACTIVE' : 'SECURE DOWNLOAD PORTAL DELIVERED'}
-                </p>
-              </div>
-
-              {/* Informative Guidance */}
-              <div className="text-[11px] text-neutral-550 leading-relaxed bg-[#cee7aa]/10 p-4 rounded-xl border border-[#97cc5b]/20 space-y-2">
-                <p className="font-bold text-[#5d8f25] flex items-center gap-1">
-                  <span>🚀</span>
-                  <span>WebView Compatibility Mode:</span>
-                </p>
-                <p>
-                  To bypass mobile WebView restrictions, we have prepared three premium delivery pipelines. Select the one that matches your device status:
-                </p>
-              </div>
-
-              {/* Controls */}
-              <div className="flex flex-col gap-2">
-                {/* Method 1: Standard / Cloud download link */}
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-1">Method 1: Direct System Download</p>
-                  <a
-                    href={activeDownload.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      showToast('Opening download link outside the app!', 'info');
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-xl text-xs font-black shadow-sm transition cursor-pointer border border-[#cee7aa] text-center active:scale-95 duration-100 block text-none"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Download via System Browser</span>
-                  </a>
-                </div>
-
-                {/* Copy link */}
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(activeDownload.url);
-                    showToast('Direct download URL copied to clipboard!', 'success');
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition cursor-pointer border border-neutral-200 active:scale-95 duration-100"
-                >
-                  <Copy className="w-4 h-4" />
-                  <span>Copy Direct Download Link</span>
-                </button>
-
-                {/* Method 2: Offline System Print to PDF */}
-                {activeDownload.filename.toLowerCase().endsWith('.pdf') && (
-                  <div className="space-y-1 pt-2">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-1">Method 2: Offline Print (Best for PDF)</p>
-                    <button
-                      onClick={() => {
-                        setActiveDownload(null);
-                        showToast('Preparing system layout... please choose "Save as PDF".', 'info');
-                        setTimeout(() => {
-                          window.print();
-                        }, 400);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-xs font-bold transition cursor-pointer border border-neutral-950 active:scale-95 duration-100"
-                    >
-                      <Printer className="w-4 h-4 text-[#97cc5b]" />
-                      <span>Save as PDF via System Print</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Method 3: Copy Document Code Support (Best for .simbidoc / Backups) */}
-                {activeDownload.rawContent && (
-                  <div className="space-y-1 pt-2">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-1">
-                      {activeDownload.filename.toLowerCase().endsWith('.simbidoc') ? 'Method 2: Clipboard Code (Best for .simbidoc)' : 'Method 3: Clipboard Text Backup'}
-                    </p>
-                    <button
-                      onClick={() => {
-                        if (activeDownload.rawContent) {
-                          navigator.clipboard.writeText(activeDownload.rawContent);
-                          showToast('Document backup data copied to clipboard!', 'success');
-                        }
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#cee7aa]/30 hover:bg-[#cee7aa]/50 text-[#5d8f25] rounded-xl text-xs font-bold transition cursor-pointer border border-[#97cc5b]/20 active:scale-95 duration-100"
-                    >
-                      <Copy className="w-4 h-4 text-[#5d8f25]" />
-                      <span>Copy Raw Document Code string</span>
-                    </button>
-                    <p className="text-[9px] text-neutral-400 leading-tight px-1 pt-1">
-                      * You can paste this code directly into the "Paste Simbi Code" box on your home dashboard to restore the document anytime!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end p-4 bg-neutral-50 border-t border-neutral-100">
-              <button
-                onClick={() => setActiveDownload(null)}
-                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-100 rounded-xl text-xs font-bold text-neutral-700 transition cursor-pointer"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Joint offline clipboard and file import restorer modal overlay */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/75 backdrop-blur-md select-none animate-fade-in no-print">
-          <div 
-            className="bg-white border border-neutral-200 rounded-2xl w-full max-w-md shadow-2xl flex flex-col text-neutral-800 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
-              <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
-                <Upload className="w-4 h-4 text-[#5d8f25]" />
-                <span>Simbi Importer & Restorer</span>
-              </h3>
-              <button
-                onClick={() => {
-                  setIsImportModalOpen(false);
-                  setPastedSimbiCode('');
-                }}
-                className="p-1 hover:bg-neutral-100 hover:text-neutral-800 rounded-md transition text-neutral-400 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-5 text-left overflow-y-auto max-h-[75vh]">
-              {/* Option 1: File Upload */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-black text-neutral-400 uppercase tracking-wider">Option A: Native Device File</h4>
-                <p className="text-[11px] text-neutral-500">
-                  Choose a downloaded <code>.simbidoc</code> JSON file or parsed PDF screenplay from your local memory.
-                </p>
-                <label
-                  htmlFor="pdf-upload-input"
-                  onClick={() => setIsImportModalOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#cee7aa] hover:bg-[#b9dd8d] text-neutral-950 font-black rounded-xl text-xs transition cursor-pointer border border-[#97cc5b]/20 text-center active:scale-95 duration-100"
-                >
-                  <FolderOpen className="w-4 h-4 text-[#5d8f25]" />
-                  <span>Choose Local File...</span>
-                </label>
-              </div>
-
-              <div className="relative flex items-center justify-center my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-neutral-150"></div>
-                </div>
-                <span className="relative bg-white px-3 text-[10px] text-neutral-400 font-bold uppercase tracking-widest">OR</span>
-              </div>
-
-              {/* Option 2: Paste Backup Code */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-black text-neutral-400 uppercase tracking-wider">Option B: Paste Backup Code</h4>
-                <p className="text-[11px] text-neutral-500">
-                  Paste the copied raw document backup code string to restore your project instantly, 100% offline.
-                </p>
-                <textarea
-                  value={pastedSimbiCode}
-                  onChange={(e) => setPastedSimbiCode(e.target.value)}
-                  placeholder='{"simbiSign":"SIMBI_DOCUMENT_v1", ...}'
-                  className="w-full h-24 p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-[10px] text-neutral-800 focus:outline-none focus:border-[#5d8f25] whitespace-pre-wrap select-text resize-none"
-                />
-                <button
-                  onClick={handleRestorePastedDoc}
-                  disabled={!pastedSimbiCode.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-neutral-800 hover:bg-neutral-950 disabled:opacity-30 disabled:hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition cursor-pointer border border-neutral-950 active:scale-95 duration-100"
-                >
-                  <CheckCircle className="w-4 h-4 text-[#97cc5b]" />
-                  <span>Restore pasted project instantly</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end p-4 bg-neutral-50 border-t border-neutral-100">
-              <button
-                onClick={() => {
-                  setIsImportModalOpen(false);
-                  setPastedSimbiCode('');
-                }}
-                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-100 rounded-xl text-xs font-bold text-neutral-700 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Prepare Loading Indicator Backdrop */}
-      {downloadPrepareLoading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-neutral-950/40 backdrop-blur-xs select-none">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center space-y-3 max-w-xs text-center border border-neutral-100">
-            <div className="w-10 h-10 border-4 border-[#97cc5b] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs font-bold text-neutral-800">Preparing Secure Export...</p>
-            <p className="text-[10px] text-neutral-400">Negotiating download certificate with system browser.</p>
           </div>
         </div>
       )}
