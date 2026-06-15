@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Specific rules for shared_docs
+    match /shared_docs/{docId} {
+      // Allow creation and retrieval of downloads. Enforce max sizes to safeguard database
+      allow create: if request.resource.data.filename is string 
+                    && request.resource.data.filename.size() <= 256
+                    && request.resource.data.content is string
+                    && request.resource.data.content.size() <= 1048576
+                    && request.resource.data.contentType is string
+                    && request.resource.data.isBase64 is bool;
+                    
+      allow get: if true;
+    }
+  }
+}

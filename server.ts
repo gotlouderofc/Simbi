@@ -59,12 +59,68 @@ app.post('/api/prepare-download', (req, res) => {
 });
 
 // GET endpoint accessed via the external system default web browser
-app.get('/api/download', (req, res) => {
+app.get('/api/download', async (req, res) => {
   try {
     const token = req.query.token as string;
+    const cloudId = req.query.cloudId as string;
 
-    if (!token) {
-      return res.status(400).send('<html><body><h3>Error: Missing secure download token.</h3></body></html>');
+    if (!token && !cloudId) {
+      return res.status(400).send('<html><body><h3>Error: Missing secure download token or cloud ID.</h3></body></html>');
+    }
+
+    if (cloudId) {
+      const projectId = 'gen-lang-client-0232629260';
+      const databaseId = 'ai-studio-d57c7c7c-15f8-442e-b60a-ea1330254b20';
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/shared_docs/${cloudId}`;
+
+      const fResponse = await fetch(firestoreUrl);
+      if (!fResponse.ok) {
+        return res.status(404).send(
+          `<html>
+             <head>
+               <meta name="viewport" content="width=device-width, initial-scale=1">
+               <style>
+                 body { font-family: -apple-system, sans-serif; text-align: center; padding: 40px 20px; color: #333; background: #faf8f5; }
+                 .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 400px; margin: 0 auto; border: 1px solid #e7eaec; }
+                 h3 { color: #cc3333; margin-top: 0; }
+                 p { font-size: 14px; line-height: 1.5; color: #666; }
+               </style>
+             </head>
+             <body>
+               <div class="card">
+                 <h3>Cloud File Not Found</h3>
+                 <p>This export file has expired, been cleared, or is no longer available on our secure cloud server.</p>
+               </div>
+             </body>
+           </html>`
+        );
+      }
+
+      const docData: any = await fResponse.json();
+      const fields = docData.fields;
+      if (!fields) {
+        return res.status(500).send('<h3>Invalid database document structure.</h3>');
+      }
+
+      const filename = fields.filename?.stringValue;
+      const content = fields.content?.stringValue;
+      const contentType = fields.contentType?.stringValue || 'application/octet-stream';
+      const isBase64 = fields.isBase64?.booleanValue ?? false;
+
+      if (!filename || !content) {
+        return res.status(404).send('<h3>Shared file content is empty or unreadable.</h3>');
+      }
+
+      // Set standard attachment response headers to trigger external browser download
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      res.setHeader('Content-Type', contentType);
+
+      if (isBase64) {
+        const fileBuffer = Buffer.from(content, 'base64');
+        return res.send(fileBuffer);
+      } else {
+        return res.send(content);
+      }
     }
 
     const item = downloadsRegistry.get(token);
