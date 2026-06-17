@@ -48,12 +48,13 @@ import {
   Pen,
   Search,
   Share2,
-  Upload
+  Upload,
+  MapPin
 } from 'lucide-react';
 
 import { Script, ScreenplayLine, ScreenplayFormat, ToastMessage, IdeaNote } from './types';
 import { Storage } from './utils/storage';
-import { PDFExporter } from './utils/pdfExporter';
+import { PDFExporter, triggerBlobDownload } from './utils/pdfExporter';
 import { Toolbar } from './components/Toolbar';
 import { Sidebar } from './components/Sidebar';
 import { DetailModal } from './components/DetailModal';
@@ -151,6 +152,7 @@ export default function App() {
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isAboutPageOpen, setIsAboutPageOpen] = useState<boolean>(false);
 
   // Find & Replace state fields
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState<boolean>(false);
@@ -208,6 +210,10 @@ export default function App() {
 
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
+      // Handle popping out of About page
+      if (!state || state.page !== 'about') {
+        setIsAboutPageOpen(false);
+      }
       // If we popped and the new state is NOT 'editor' (i.e. went back to home)
       if (!state || state.page !== 'editor') {
         // 1. Is script editor open?
@@ -348,6 +354,21 @@ export default function App() {
     return () => clearInterval(interval);
   }, [lines, activeScript, currentScriptId]);
 
+  const handleOpenAboutPage = () => {
+    setIsAboutPageOpen(true);
+    if (window.history.state?.page !== 'about') {
+      window.history.pushState({ page: 'about' }, '');
+    }
+  };
+
+  const handleCloseAboutPage = () => {
+    if (window.history.state?.page === 'about') {
+      window.history.back();
+    } else {
+      setIsAboutPageOpen(false);
+    }
+  };
+
   // Handle PDF Export
   const handleExportPDF = (scriptToExport?: Script) => {
     let target = scriptToExport;
@@ -462,14 +483,14 @@ export default function App() {
     });
   };
 
-  // Joint importer for screenplay documents - disassembles PDF and loads .simbidoc files
+  // Joint importer for screenplay documents - disassembles PDF and loads .simbidoc and .semidoc files
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const fileName = file.name.toLowerCase();
 
-    if (fileName.endsWith('.simbidoc')) {
+    if (fileName.endsWith('.simbidoc') || fileName.endsWith('.semidoc')) {
       showToast('Reading and decoding Simbi document...', 'info');
       try {
         const text = await file.text();
@@ -484,7 +505,7 @@ export default function App() {
         const payload = data.payload;
 
         if (!payload || !payload.title) {
-          showToast('Missing document payload inside .simbidoc file.', 'error');
+          showToast('Missing document payload inside file.', 'error');
           return;
         }
 
@@ -517,7 +538,7 @@ export default function App() {
         }
       } catch (err: any) {
         console.error('SimbiDoc import error:', err);
-        showToast('Failed to parse and extract the .simbidoc file.', 'error');
+        showToast('Failed to parse and extract the document file.', 'error');
       }
 
       // Reset input element value to allow continuous updates
@@ -660,6 +681,20 @@ export default function App() {
 
   // Share triggers
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
+    // Generate .semidoc and trigger download instantly
+    const docTitle = item.title || 'Untitled';
+    const filename = `${docTitle}.semidoc`;
+    
+    const semidocContent = {
+      simbiSign: "SIMBI_DOCUMENT_v1",
+      docType: type,
+      payload: item
+    };
+    
+    // Trigger WebView safe download on share click
+    triggerBlobDownload(JSON.stringify(semidocContent, null, 2), filename, 'application/octet-stream');
+    showToast(`Generating .semidoc and downloading "${docTitle}"`, 'success');
+
     setSharingItem(item);
     setSharingType(type);
     setIsShareModalOpen(true);
@@ -669,7 +704,7 @@ export default function App() {
     if (!sharingItem || !sharingType) return;
     
     const docTitle = sharingItem.title || 'Untitled';
-    const filename = `${docTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}.simbidoc`;
+    const filename = `${docTitle}.semidoc`;
     
     const simbiDocContent = {
       simbiSign: "SIMBI_DOCUMENT_v1",
@@ -686,29 +721,17 @@ export default function App() {
         await navigator.share({
           files: [file],
           title: `Simbi Document - ${docTitle}`,
-          text: `Check out my Simbi draft: "${docTitle}"! You can import this .simbidoc file directly into your own app instance.`
+          text: `Check out my Simbi draft: "${docTitle}"! You can import this .semidoc file directly into your own app instance.`
         });
         showToast('Shared successfully!', 'success');
       } catch (err: any) {
         console.warn('System native share failed, falling back to download:', err);
-        triggerFileDownload(docString, filename);
+        triggerBlobDownload(docString, filename, 'application/octet-stream');
       }
     } else {
-      triggerFileDownload(docString, filename);
-      showToast('Downloaded .simbidoc file to your storage. You can attach it safely to share!', 'success');
+      triggerBlobDownload(docString, filename, 'application/octet-stream');
+      showToast('Downloaded .semidoc file to your storage. You can attach it safely to share!', 'success');
     }
-  };
-
-  const triggerFileDownload = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   // Find text occurrences in current screenplay (case-insensitive)
@@ -1482,7 +1505,62 @@ export default function App() {
         ))}
       </div>
 
-      {currentScriptId === null && currentNoteId === null ? (
+      {isAboutPageOpen ? (
+        // ============================================
+        // ABOUT PAGE WORKSPACE
+        // ============================================
+        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] relative">
+          {/* Sticky Header */}
+          <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-35 select-none animate-slide-down">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCloseAboutPage}
+                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-600 transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  title="Return to Homescreen"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="text-xs font-bold">Back</span>
+                </button>
+                <div className="h-4 w-px bg-neutral-200" />
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-500">About Simbi</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-between w-full">
+            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-10 select-text">
+              {/* App Icon */}
+              <div className="mb-6 p-4 bg-neutral-900 rounded-2xl shadow-xl flex items-center justify-center transition duration-150 transform hover:rotate-3">
+                <Kite className="w-14 h-14 text-[#97cc5b]" />
+              </div>
+              <h1 className="text-3xl font-black text-neutral-900 tracking-tight mb-2">Simbi</h1>
+              <p className="text-xs font-black text-[#5d8f25] uppercase tracking-wider mb-6">Professional Screenwriting Application</p>
+              
+              <div className="text-neutral-600 space-y-4 text-xs leading-relaxed max-w-md text-center font-medium">
+                <p>
+                  Welcome to Simbi, a minimalist, highly focused screenplay editor designed to give storm-tossed narrative minds the perfect arena for typing, brainstorming, and exporting industry-standard screenplay drafts.
+                </p>
+                <p>
+                  With real-time automatic synchronization, standard 12pt industry margins, dynamic PDF disassembling, and cross-device offline support, your screen stories always remain secure, organized, and ready to share.
+                </p>
+              </div>
+            </div>
+
+            {/* About section written with small grey text at the bottom */}
+            <div className="border-t border-neutral-200 mt-12 pt-8 pb-4 flex flex-col items-center text-center gap-2 max-w-xl mx-auto w-full select-text">
+              <p className="text-xs text-neutral-500 max-w-md leading-relaxed font-normal">
+                Simbi professional screenwriting app, made with 😘 by Emmanuel Enivweru for all who tell stories.
+              </p>
+              <div className="flex items-center gap-1 text-xs text-neutral-400 font-medium">
+                <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Cool City, Delta Nigeria</span>
+              </div>
+            </div>
+          </main>
+        </div>
+      ) : currentScriptId === null && currentNoteId === null ? (
         // ============================================
         // CATALOGUE HOME SCREEN
         // ============================================
@@ -1531,7 +1609,7 @@ export default function App() {
                 <input
                   type="file"
                   id="pdf-upload-input"
-                  accept=".pdf,.simbidoc"
+                  accept=".pdf,.simbidoc,.semidoc"
                   className="hidden"
                   onChange={handleImportFile}
                 />
@@ -1664,10 +1742,6 @@ export default function App() {
                             <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
                               {item.title || 'Untitled note'}
                             </h3>
-                            {/* Description text */}
-                            <p className="text-xs text-neutral-400 mt-1 line-clamp-1 italic font-normal">
-                              {item.description || 'No description provided.'}
-                            </p>
                             {/* Simplified smaller date */}
                             <p className="text-[10px] text-neutral-500 mt-1">
                               {formatDateStr(item.updatedAt)}
@@ -1712,6 +1786,17 @@ export default function App() {
               );
             })()}
           </main>
+          
+          {/* Sticky floating hamburger button at the bottom-left of the homescreen */}
+          <div className="fixed bottom-6 left-6 z-40">
+            <button
+              onClick={handleOpenAboutPage}
+              className="p-4 bg-neutral-900 text-[#97cc5b] hover:bg-neutral-800 hover:text-white rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center border border-neutral-850"
+              title="About Simbi"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       ) : currentScriptId !== null ? (
         // ============================================
@@ -2300,7 +2385,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Simbi Document (.simbidoc) Sharing Modal */}
+      {/* Simbi Document (.semidoc) Sharing Modal */}
       {isShareModalOpen && sharingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs select-none animate-fade-in">
           <div 
@@ -2311,7 +2396,7 @@ export default function App() {
             <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
               <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
                 <Share2 className="w-4 h-4 text-[#5d8f25]" />
-                <span>Share Simbi Document (.simbidoc)</span>
+                <span>Share Simbi Document (.semidoc)</span>
               </h3>
               <button
                 onClick={() => setIsShareModalOpen(false)}
@@ -2326,7 +2411,7 @@ export default function App() {
               
               {/* Document Icon & Title Panel */}
               <div className="flex flex-col items-center justify-center p-5 bg-neutral-50 border border-neutral-100 rounded-2xl">
-                {/* SVG representation of .simbidoc format */}
+                {/* SVG representation of .semidoc format */}
                 <svg className="w-24 h-24 drop-shadow-md select-none" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Rounded white paper sheet with thick green border */}
                   <rect x="6" y="6" width="88" height="108" rx="14" fill="#FFFFFF" stroke="#97cc5b" strokeWidth="5"/>
@@ -2350,14 +2435,14 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Informative description text about .simbidoc format */}
+              {/* Informative description text about .semidoc format */}
               <div className="text-[11px] text-neutral-500 leading-relaxed bg-[#cee7aa]/10 p-3.5 rounded-xl border border-[#97cc5b]/20 space-y-1.5">
                 <p className="font-bold text-[#5d8f25] flex items-center gap-1">
                   <span>✨</span>
-                  <span>About .simbidoc Exclusivity:</span>
+                  <span>About .semidoc Exclusivity:</span>
                 </p>
                 <p>
-                  Saving or sharing files as <strong>.simbidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
+                  Saving or sharing files as <strong>.semidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
                 </p>
                 <p>
                   Any recipient can easily import this file via standard <strong>Import</strong> button on their own device to continue editing seamlessly.
@@ -2368,19 +2453,19 @@ export default function App() {
               <button
                 onClick={() => {
                   const docTitle = sharingItem.title || 'Untitled';
-                  const filename = `${docTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}.simbidoc`;
+                  const filename = `${docTitle}.semidoc`;
                   const simbiDocContent = {
                     simbiSign: "SIMBI_DOCUMENT_v1",
                     docType: sharingType,
                     payload: sharingItem
                   };
-                  triggerFileDownload(JSON.stringify(simbiDocContent, null, 2), filename);
-                  showToast('Editable .simbidoc file saved to your device!', 'success');
+                  triggerBlobDownload(JSON.stringify(simbiDocContent, null, 2), filename, 'application/octet-stream');
+                  showToast('Editable .semidoc file saved to your device!', 'success');
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-xl text-xs font-black shadow-md transition cursor-pointer border border-[#cee7aa] active:scale-95 duration-100"
               >
                 <Upload className="w-4 h-4 rotate-180" />
-                <span>Download Editable .simbidoc File</span>
+                <span>Download Editable .semidoc File</span>
               </button>
 
             </div>

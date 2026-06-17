@@ -58,12 +58,12 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      // Fetch dynamic handler (Network first with cache fallback, or stale-while-revalidate for static-like files)
-      const isDocument = request.mode === 'navigate' || 
-                        (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
-
-      // For document pages, we prefer Network First so the user gets updates if online, falling back to cache
-      if (isDocument) {
+      // Helper to fetch and update cache silently in the background
+      const updateCache = () => {
+        // If no internet connection discovered, don't bother with updates
+        if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+          return Promise.resolve();
+        }
         return fetch(request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
@@ -73,22 +73,13 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           })
           .catch(() => {
-            // Offline fallback
-            return cachedResponse || caches.match('/') || caches.match('/index.html');
+            /* Silently catch offline background fetch errors and don't bother with updates */
           });
-      }
+      };
 
-      // For static assets (JS, CSS, images, JSON files, etc.), use cache-first / stale-while-revalidate
       if (cachedResponse) {
-        // Fetch fresh copy in the background to update the cache silently
-        fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
-            }
-          })
-          .catch(() => { /* Silently catch offline background fetch errors */ });
+        // Serve from cache first on page web app load and update silently in background
+        event.waitUntil(updateCache());
         return cachedResponse;
       }
 
@@ -105,8 +96,13 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // If completely offline and asset fails to fetch, respond with fallback if appropriate
-          return new Response('Network error occurred', {
+          // Offline fallback for navigations
+          const isDocument = request.mode === 'navigate' || 
+                            (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
+          if (isDocument) {
+            return caches.match('/') || caches.match('/index.html');
+          }
+          return new Response('Network error occurred and no cache available', {
             status: 480,
             statusText: 'Network Unavailable Offline'
           });

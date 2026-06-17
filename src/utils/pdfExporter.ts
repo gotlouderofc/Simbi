@@ -6,6 +6,35 @@
 import { jsPDF } from 'jspdf';
 import { Script, ScreenplayLine, IdeaNote } from '../types';
 
+export function triggerBlobDownload(blobData: Blob | string, filename: string, mimeType: string) {
+  const win = window as any;
+  // Standard desktop or mobile browser behavior
+  if (!win.Capacitor || !win.Capacitor.isNativePlatform()) {
+    const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  // If inside the Capacitor WebView, transform blob to standard data URL to prevent 0-byte drops
+  const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: mimeType });
+  const reader = new FileReader();
+  reader.onloadend = function () {
+    const base64Data = reader.result as string;
+    const link = document.createElement('a');
+    link.href = base64Data;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  reader.readAsDataURL(blob);
+}
+
 export const PDFExporter = {
   export(script: Script): void {
     // Standard Letter dimensions: 8.5" x 11" (612pt x 792pt)
@@ -264,8 +293,10 @@ export const PDFExporter = {
     }
 
     // Download file
-    const safeTitle = script.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'untitled_script';
-    doc.save(`${safeTitle}_screenplay.pdf`);
+    const safeTitle = script.title.trim() || 'Untitled_Script';
+    const filename = `${safeTitle}_screenplay.pdf`;
+    const pdfBlob = doc.output('blob');
+    triggerBlobDownload(pdfBlob, filename, 'application/pdf');
   },
 
   exportNote(note: IdeaNote): void {
@@ -398,7 +429,9 @@ export const PDFExporter = {
       doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 30, { align: 'center' });
     }
 
-    const safeTitle = note.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'untitled_notes';
-    doc.save(`${safeTitle}_idea_notes.pdf`);
+    const safeTitle = note.title.trim() || 'Untitled_Notes';
+    const filename = `${safeTitle}_idea_notes.pdf`;
+    const pdfBlob = doc.output('blob');
+    triggerBlobDownload(pdfBlob, filename, 'application/pdf');
   }
 };
