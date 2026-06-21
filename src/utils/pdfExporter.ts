@@ -8,31 +8,58 @@ import { Script, ScreenplayLine, IdeaNote } from '../types';
 
 export function triggerBlobDownload(blobData: Blob | string, filename: string, mimeType: string) {
   const win = window as any;
-  // Standard desktop or mobile browser behavior
-  if (!win.Capacitor || !win.Capacitor.isNativePlatform()) {
-    const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    return;
-  }
-
-  // If inside the Capacitor WebView, transform blob to standard data URL to prevent 0-byte drops
   const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: mimeType });
+
+  // 1. Standard browser/desktop trigger (always do this so standard downloads work normally)
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+
+  // 2. Generate Base64 and assign to a reliable global state & dispatch event for Capacitor WebView/Webview writing
   const reader = new FileReader();
   reader.onloadend = function () {
     const base64Data = reader.result as string;
-    const link = document.createElement('a');
-    link.href = base64Data;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    // Attach to global window scope so Capacitor WebViews can retrieve it via `window.lastGeneratedFile`
+    win.lastGeneratedFile = {
+      filename: filename,
+      mimeType: mimeType,
+      base64: base64Data,
+      timestamp: Date.now()
+    };
+
+    // Trigger a custom event that any WebView wrapper can addEventListener to
+    const customEvent = new CustomEvent('simbiFileDownloaded', {
+      detail: {
+        filename: filename,
+        mimeType: mimeType,
+        base64: base64Data
+      }
+    });
+    window.dispatchEvent(customEvent);
+
+    // Also call specialized bridge channels if defined in the WebView environment
+    if (win.AndroidChannel && typeof win.AndroidChannel.onFileDownloaded === 'function') {
+      try {
+        win.AndroidChannel.onFileDownloaded(filename, base64Data, mimeType);
+      } catch (err) {
+        console.warn('AndroidBridge call failed:', err);
+      }
+    }
   };
   reader.readAsDataURL(blob);
+
+  // Return values directly as requested ("just return something")
+  return {
+    filename,
+    mimeType,
+    blob
+  };
 }
 
 export const PDFExporter = {

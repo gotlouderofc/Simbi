@@ -153,6 +153,7 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAboutPageOpen, setIsAboutPageOpen] = useState<boolean>(false);
+  const [resetConfirm, setResetConfirm] = useState<boolean>(false);
 
   // Find & Replace state fields
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState<boolean>(false);
@@ -366,6 +367,35 @@ export default function App() {
       window.history.back();
     } else {
       setIsAboutPageOpen(false);
+    }
+  };
+
+  const handleResetApp = async () => {
+    if (!resetConfirm) {
+      setResetConfirm(true);
+      // Automatically clear after 4 seconds
+      setTimeout(() => setResetConfirm(false), 4000);
+      return;
+    }
+
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+      }
+
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(reg => reg.unregister()));
+      }
+
+      // Hard reload from server
+      window.location.href = window.location.origin + '?reset=' + Date.now();
+    } catch (err) {
+      window.location.reload();
     }
   };
 
@@ -1509,7 +1539,7 @@ export default function App() {
         // ============================================
         // ABOUT PAGE WORKSPACE
         // ============================================
-        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] relative">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] relative no-scrollbar">
           {/* Sticky Header */}
           <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-35 select-none animate-slide-down">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
@@ -1528,13 +1558,9 @@ export default function App() {
             </div>
           </header>
 
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-between w-full">
-            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-10 select-text">
-              {/* App Icon */}
-              <div className="mb-6 p-4 bg-neutral-900 rounded-2xl shadow-xl flex items-center justify-center transition duration-150 transform hover:rotate-3">
-                <Kite className="w-14 h-14 text-[#97cc5b]" />
-              </div>
+          {/* Main content - reduced padding to omit scrolling */}
+          <main className="flex-1 overflow-y-auto max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col justify-between w-full no-scrollbar">
+            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-2 select-text">
               <h1 className="text-3xl font-black text-neutral-900 tracking-tight mb-2">Simbi</h1>
               <p className="text-xs font-black text-[#5d8f25] uppercase tracking-wider mb-6">Professional Screenwriting Application</p>
               
@@ -1546,10 +1572,26 @@ export default function App() {
                   With real-time automatic synchronization, standard 12pt industry margins, dynamic PDF disassembling, and cross-device offline support, your screen stories always remain secure, organized, and ready to share.
                 </p>
               </div>
+
+              {/* Reset Button */}
+              <div className="mt-6 flex justify-center select-none">
+                <button
+                  onClick={handleResetApp}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm tracking-tight border ${
+                    resetConfirm 
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 animate-pulse' 
+                      : 'bg-rose-50/50 hover:bg-rose-50 text-rose-600 border-rose-100'
+                  }`}
+                  title="Reset device app data, clears cache and reloads default presets"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{resetConfirm ? 'Click Again to Confirm Reset' : 'Reset Application Data'}</span>
+                </button>
+              </div>
             </div>
 
             {/* About section written with small grey text at the bottom */}
-            <div className="border-t border-neutral-200 mt-12 pt-8 pb-4 flex flex-col items-center text-center gap-2 max-w-xl mx-auto w-full select-text">
+            <div className="border-t border-neutral-200 mt-4 pt-4 pb-4 flex flex-col items-center text-center gap-2 max-w-xl mx-auto w-full select-text">
               <p className="text-xs text-neutral-500 max-w-md leading-relaxed font-normal">
                 Simbi professional screenwriting app, made with 😘 by Emmanuel Enivweru for all who tell stories.
               </p>
@@ -1791,10 +1833,12 @@ export default function App() {
           <div className="fixed bottom-6 left-6 z-40">
             <button
               onClick={handleOpenAboutPage}
-              className="p-4 bg-neutral-900 text-[#97cc5b] hover:bg-neutral-800 hover:text-white rounded-full shadow-2xl active:scale-95 transition cursor-pointer flex items-center justify-center border border-neutral-850"
+              className="w-12 h-12 bg-white text-neutral-800 hover:bg-neutral-50 hover:text-neutral-950 active:scale-95 transition cursor-pointer flex items-center justify-center rounded-full border border-neutral-200 shadow-xl"
               title="About Simbi"
             >
-              <Menu className="w-5 h-5" />
+              <svg className="w-5 h-5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                <path d="M112 448C103.2 448 96 455.2 96 464C96 508.2 131.8 544 176 544L464 544C508.2 544 544 508.2 544 464C544 455.2 536.8 448 528 448L112 448zM96 266C96 278.2 105.9 288 118 288L522 288C534.2 288 544 278.1 544 266C544 248.8 541.4 231.6 533.2 216.5C511 175.7 450.9 96 320 96C189.1 96 129 175.6 106.8 216.5C98.6 231.6 96 248.8 96 266zM64 368C64 385.7 78.3 400 96 400L544 400C561.7 400 576 385.7 576 368C576 350.3 561.7 336 544 336L96 336C78.3 336 64 350.3 64 368zM320 136C333.3 136 344 146.7 344 160C344 173.3 333.3 184 320 184C306.7 184 296 173.3 296 160C296 146.7 306.7 136 320 136zM184 192C184 178.7 194.7 168 208 168C221.3 168 232 178.7 232 192C232 205.3 221.3 216 208 216C194.7 216 184 205.3 184 192zM432 168C445.3 168 456 178.7 456 192C456 205.3 445.3 216 432 216C418.7 216 408 205.3 408 192C408 178.7 418.7 168 432 168z"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -2328,21 +2372,6 @@ export default function App() {
               {noteEditMode === 'read' ? <BookOpen className="w-5 h-5 text-neutral-955" /> : <Eye className="w-5 h-5 text-neutral-955" />}
             </button>
 
-            {/* Subtle corner Auto-save notification badge */}
-            <div className="fixed bottom-6 left-6 z-40 pointer-events-none transition-all duration-300">
-              {saveStatus === 'saving' ? (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/90 text-[10px] font-bold text-neutral-200 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-pulse animate-fade-in">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span>Saving...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/80 text-[10px] font-semibold text-neutral-300 rounded-full shadow-lg backdrop-blur-md border border-neutral-800 animate-fade-in">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
-                  <span>Draft Saved</span>
-                </div>
-              )}
-            </div>
-
             <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex justify-center p-4 sm:p-8 select-text relative">
               
               {/* Note paper sheet wrapping layer */}
@@ -2355,10 +2384,25 @@ export default function App() {
               >
                 
                 {/* Optional brief details metadata overlay panel inside paper */}
-                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-start shadow-sm">
+                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm select-none">
                   <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25]">
                     <Clock className="w-3.5 h-3.5 text-[#5d8f25]" />
                     <span>Last edited {activeNote && formatDateStr(activeNote.updatedAt)}</span>
+                  </div>
+
+                  {/* Integrated small save notification text on the right side of the tab */}
+                  <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                    {saveStatus === 'saving' ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-neutral-500 font-bold">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
+                        <span className="text-[#5d8f25] font-bold">Draft Saved</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
