@@ -217,6 +217,12 @@ export default function App() {
   const linesRef = useRef<any[]>([]);
   linesRef.current = lines;
 
+  const isSearchOpenRef = useRef<boolean>(false);
+  isSearchOpenRef.current = isSearchOpen;
+
+  const isShareModalOpenRef = useRef<boolean>(false);
+  isShareModalOpenRef.current = isShareModalOpen;
+
   // Keep history synced for back-button navigation
   useEffect(() => {
     // Tag initial page as home state if not set
@@ -229,6 +235,14 @@ export default function App() {
       // Handle popping out of About page
       if (!state || state.page !== 'about') {
         setIsAboutPageOpen(false);
+      }
+      // Handle popping out of Search page
+      if (!state || state.page !== 'search') {
+        setIsSearchOpen(false);
+      }
+      // Handle popping out of Share page
+      if (!state || state.page !== 'share') {
+        setIsShareModalOpen(false);
       }
       // If we popped and the new state is NOT 'editor' (i.e. went back to home)
       if (!state || state.page !== 'editor') {
@@ -756,6 +770,9 @@ export default function App() {
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
     setSharingItem(item);
     setSharingType(type);
+    if (window.history.state?.page !== 'share') {
+      window.history.pushState({ page: 'share' }, '');
+    }
     setIsShareModalOpen(true);
   };
 
@@ -1556,7 +1573,7 @@ export default function App() {
     <div id="screenwriter-app" className={`h-screen w-screen flex flex-col bg-[#FAF9F6] text-neutral-950 font-sans antialiased overflow-hidden select-none ${darkMode ? 'dark' : ''}`}>
       
       {/* Toast Alert stack popup */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-[280px] sm:max-w-sm">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col gap-2 pointer-events-none max-w-[280px] sm:max-w-sm">
         {toasts.map(t => (
           <div
             key={t.id}
@@ -1706,6 +1723,9 @@ export default function App() {
                 <button
                   onClick={() => {
                     setSearchQuery('');
+                    if (window.history.state?.page !== 'search') {
+                      window.history.pushState({ page: 'search' }, '');
+                    }
                     setIsSearchOpen(true);
                   }}
                   className="h-8 flex items-center gap-1.5 px-3 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 dark:border-neutral-800 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white dark:bg-[#111318]"
@@ -2523,7 +2543,13 @@ export default function App() {
           <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-neutral-850 bg-black' : 'border-neutral-200 bg-white'} h-14 shrink-0`}>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsShareModalOpen(false)}
+                onClick={() => {
+                  if (window.history.state?.page === 'share') {
+                    window.history.back();
+                  } else {
+                    setIsShareModalOpen(false);
+                  }
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 border cursor-pointer ${
                   darkMode
                     ? 'bg-black hover:bg-neutral-900 border-neutral-850 text-neutral-300'
@@ -2779,7 +2805,11 @@ export default function App() {
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  setIsSearchOpen(false);
+                  if (window.history.state?.page === 'search') {
+                    window.history.back();
+                  } else {
+                    setIsSearchOpen(false);
+                  }
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 border cursor-pointer ${
                   darkMode
