@@ -711,20 +711,6 @@ export default function App() {
 
   // Share triggers
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
-    // Generate .simbidoc and trigger download instantly
-    const docTitle = item.title || 'Untitled';
-    const filename = `${docTitle}.simbidoc`;
-    
-    const simbidocContent = {
-      simbiSign: "SIMBI_DOCUMENT_v1",
-      docType: type,
-      payload: item
-    };
-    
-    // Trigger WebView safe download on share click
-    triggerBlobDownload(JSON.stringify(simbidocContent, null, 2), filename, 'application/octet-stream');
-    showToast(`Generating .simbidoc and downloading "${docTitle}"`, 'success');
-
     setSharingItem(item);
     setSharingType(type);
     setIsShareModalOpen(true);
