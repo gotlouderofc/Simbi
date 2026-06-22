@@ -513,14 +513,14 @@ export default function App() {
     });
   };
 
-  // Joint importer for screenplay documents - disassembles PDF and loads .simbidoc and .semidoc files
+  // Joint importer for screenplay documents - disassembles PDF and loads .simbidoc files
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const fileName = file.name.toLowerCase();
 
-    if (fileName.endsWith('.simbidoc') || fileName.endsWith('.semidoc')) {
+    if (fileName.endsWith('.simbidoc')) {
       showToast('Reading and decoding Simbi document...', 'info');
       try {
         const text = await file.text();
@@ -711,19 +711,19 @@ export default function App() {
 
   // Share triggers
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
-    // Generate .semidoc and trigger download instantly
+    // Generate .simbidoc and trigger download instantly
     const docTitle = item.title || 'Untitled';
-    const filename = `${docTitle}.semidoc`;
+    const filename = `${docTitle}.simbidoc`;
     
-    const semidocContent = {
+    const simbidocContent = {
       simbiSign: "SIMBI_DOCUMENT_v1",
       docType: type,
       payload: item
     };
     
     // Trigger WebView safe download on share click
-    triggerBlobDownload(JSON.stringify(semidocContent, null, 2), filename, 'application/octet-stream');
-    showToast(`Generating .semidoc and downloading "${docTitle}"`, 'success');
+    triggerBlobDownload(JSON.stringify(simbidocContent, null, 2), filename, 'application/octet-stream');
+    showToast(`Generating .simbidoc and downloading "${docTitle}"`, 'success');
 
     setSharingItem(item);
     setSharingType(type);
@@ -734,7 +734,7 @@ export default function App() {
     if (!sharingItem || !sharingType) return;
     
     const docTitle = sharingItem.title || 'Untitled';
-    const filename = `${docTitle}.semidoc`;
+    const filename = `${docTitle}.simbidoc`;
     
     const simbiDocContent = {
       simbiSign: "SIMBI_DOCUMENT_v1",
@@ -751,7 +751,7 @@ export default function App() {
         await navigator.share({
           files: [file],
           title: `Simbi Document - ${docTitle}`,
-          text: `Check out my Simbi draft: "${docTitle}"! You can import this .semidoc file directly into your own app instance.`
+          text: `Check out my Simbi draft: "${docTitle}"! You can import this .simbidoc file directly into your own app instance.`
         });
         showToast('Shared successfully!', 'success');
       } catch (err: any) {
@@ -760,7 +760,7 @@ export default function App() {
       }
     } else {
       triggerBlobDownload(docString, filename, 'application/octet-stream');
-      showToast('Downloaded .semidoc file to your storage. You can attach it safely to share!', 'success');
+      showToast('Downloaded .simbidoc file to your storage. You can attach it safely to share!', 'success');
     }
   };
 
@@ -1651,7 +1651,7 @@ export default function App() {
                 <input
                   type="file"
                   id="pdf-upload-input"
-                  accept=".pdf,.simbidoc,.semidoc"
+                  accept=".pdf,.simbidoc"
                   className="hidden"
                   onChange={handleImportFile}
                 />
@@ -2429,7 +2429,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Simbi Document (.semidoc) Sharing Modal */}
+      {/* Simbi Document (.simbidoc) Sharing Modal */}
       {isShareModalOpen && sharingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs select-none animate-fade-in">
           <div 
@@ -2440,7 +2440,7 @@ export default function App() {
             <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
               <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
                 <Share2 className="w-4 h-4 text-[#5d8f25]" />
-                <span>Share Simbi Document (.semidoc)</span>
+                <span>Share Simbi Document (.simbidoc)</span>
               </h3>
               <button
                 onClick={() => setIsShareModalOpen(false)}
@@ -2455,7 +2455,7 @@ export default function App() {
               
               {/* Document Icon & Title Panel */}
               <div className="flex flex-col items-center justify-center p-5 bg-neutral-50 border border-neutral-100 rounded-2xl">
-                {/* SVG representation of .semidoc format */}
+                {/* SVG representation of .simbidoc format */}
                 <svg className="w-24 h-24 drop-shadow-md select-none" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Rounded white paper sheet with thick green border */}
                   <rect x="6" y="6" width="88" height="108" rx="14" fill="#FFFFFF" stroke="#97cc5b" strokeWidth="5"/>
@@ -2479,14 +2479,14 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Informative description text about .semidoc format */}
+              {/* Informative description text about .simbidoc format */}
               <div className="text-[11px] text-neutral-500 leading-relaxed bg-[#cee7aa]/10 p-3.5 rounded-xl border border-[#97cc5b]/20 space-y-1.5">
                 <p className="font-bold text-[#5d8f25] flex items-center gap-1">
                   <span>✨</span>
-                  <span>About .semidoc Exclusivity:</span>
+                  <span>About .simbidoc Exclusivity:</span>
                 </p>
                 <p>
-                  Saving or sharing files as <strong>.semidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
+                  Saving or sharing files as <strong>.simbidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
                 </p>
                 <p>
                   Any recipient can easily import this file via standard <strong>Import</strong> button on their own device to continue editing seamlessly.
@@ -2497,19 +2497,19 @@ export default function App() {
               <button
                 onClick={() => {
                   const docTitle = sharingItem.title || 'Untitled';
-                  const filename = `${docTitle}.semidoc`;
+                  const filename = `${docTitle}.simbidoc`;
                   const simbiDocContent = {
                     simbiSign: "SIMBI_DOCUMENT_v1",
                     docType: sharingType,
                     payload: sharingItem
                   };
                   triggerBlobDownload(JSON.stringify(simbiDocContent, null, 2), filename, 'application/octet-stream');
-                  showToast('Editable .semidoc file saved to your device!', 'success');
+                  showToast('Editable .simbidoc file saved to your device!', 'success');
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-xl text-xs font-black shadow-md transition cursor-pointer border border-[#cee7aa] active:scale-95 duration-100"
               >
                 <Upload className="w-4 h-4 rotate-180" />
-                <span>Download Editable .semidoc File</span>
+                <span>Download Editable .simbidoc File</span>
               </button>
 
             </div>
