@@ -49,7 +49,10 @@ import {
   Search,
   Share2,
   Upload,
-  MapPin
+  MapPin,
+  Sun,
+  Moon,
+  Pin
 } from 'lucide-react';
 
 import { Script, ScreenplayLine, ScreenplayFormat, ToastMessage, IdeaNote } from './types';
@@ -154,6 +157,18 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAboutPageOpen, setIsAboutPageOpen] = useState<boolean>(false);
   const [resetConfirm, setResetConfirm] = useState<boolean>(false);
+
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('simbi_dark_mode') === 'true';
+  });
+
+  const toggleDarkMode = () => {
+    setDarkMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('simbi_dark_mode', String(newVal));
+      return newVal;
+    });
+  };
 
   // Find & Replace state fields
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState<boolean>(false);
@@ -262,6 +277,34 @@ export default function App() {
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 2500);
+  };
+
+  const handleToggleScriptPin = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = scripts.map(s => {
+      if (s.id === id) {
+        const updatedScript = { ...s, pinned: !s.pinned };
+        Storage.saveScript(updatedScript);
+        return updatedScript;
+      }
+      return s;
+    });
+    setScripts(updated);
+    showToast('Pin status updated', 'success');
+  };
+
+  const handleToggleNotePin = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = notes.map(n => {
+      if (n.id === id) {
+        const updatedNote = { ...n, pinned: !n.pinned };
+        Storage.saveNote(updatedNote);
+        return updatedNote;
+      }
+      return n;
+    });
+    setNotes(updated);
+    showToast('Pin status updated', 'success');
   };
 
   // Synchronize from local list when list updates
@@ -1478,6 +1521,15 @@ export default function App() {
     });
   };
 
+  const formatTitle = (title: string) => {
+    if (!title) return title;
+    const words = title.trim().split(/\s+/);
+    if (words.length > 4) {
+      return words.slice(0, 4).join(' ') + ' ...';
+    }
+    return title;
+  };
+
   // Estimate total word counts
   const getWordCount = (script: Script, liveCount?: boolean) => {
     const items = liveCount ? lines : (script.content || []);
@@ -1501,7 +1553,7 @@ export default function App() {
   const currentSelectionFormat = lines[focusedLineIdx]?.format || 'action';
 
   return (
-    <div id="screenwriter-app" className="h-screen w-screen flex flex-col bg-[#FAF9F6] text-neutral-950 font-sans antialiased overflow-hidden select-none">
+    <div id="screenwriter-app" className={`h-screen w-screen flex flex-col bg-[#FAF9F6] text-neutral-950 font-sans antialiased overflow-hidden select-none ${darkMode ? 'dark' : ''}`}>
       
       {/* Toast Alert stack popup */}
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-[280px] sm:max-w-sm">
@@ -1594,29 +1646,37 @@ export default function App() {
         // ============================================
         <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] select-text overflow-y-auto homescreen-container">
           {/* Main Top Header bar */}
-          <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
+          <header className="border-b border-neutral-200 bg-white dark:bg-[#111318] sticky top-0 backdrop-blur-md z-30 select-none">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#97cc5b] text-neutral-950 font-black flex items-center justify-center rounded-xl text-lg tracking-tighter selection:bg-neutral-100 shadow-md shadow-[#97cc5b]/10">
-                  S
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900 simbi-logo-gradient">
-                    Simbi
-                  </h1>
-                </div>
+                <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white simbi-logo-gradient">
+                  Simbi
+                </h1>
               </div>
               <div className="flex flex-row items-center gap-2.5 shrink-0">
+                {/* Theme Mode Toggle Button */}
+                <button
+                  onClick={toggleDarkMode}
+                  className="h-9 w-9 flex items-center justify-center hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 dark:border-neutral-800 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white dark:bg-[#111318]"
+                  title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
+                >
+                  {darkMode ? (
+                    <Sun className="w-4 h-4 text-amber-500 animate-fade-in" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-neutral-500 animate-fade-in" />
+                  )}
+                </button>
+
                 <button
                   onClick={openNewScriptModal}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-black rounded-lg text-[11px] tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
+                  className="h-9 flex items-center justify-center gap-1.5 px-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-black rounded-lg text-[11px] tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 text-neutral-950" />
                   <span>Script</span>
                 </button>
                 <button
                   onClick={openNewNoteModal}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-200 font-bold rounded-lg text-[11px] tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
+                  className="h-9 flex items-center justify-center gap-1.5 px-3 bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 font-bold rounded-lg text-[11px] tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-[#5d8f25]" />
                   <span>Idea</span>
@@ -1648,17 +1708,17 @@ export default function App() {
                     setSearchQuery('');
                     setIsSearchOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white"
+                  className="h-8 flex items-center gap-1.5 px-3 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 dark:border-neutral-800 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white dark:bg-[#111318]"
                   title="Search scripts and notes"
                 >
-                  <Search className="w-3.5 h-3.5" />
+                  <Search className="w-3.5 h-3.5 text-[#5d8f25]" />
                   <span>Search</span>
                 </button>
 
                 {/* Import PDF side-by-side button prompt */}
                 <label
                   htmlFor="pdf-upload-input"
-                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white"
+                  className="h-8 flex items-center gap-1.5 px-3 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 dark:border-neutral-800 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white dark:bg-[#111318]"
                   title="Upload screenplay PDF to disassemble"
                 >
                   <Upload className="w-3.5 h-3.5 text-[#5d8f25]" />
@@ -1671,7 +1731,14 @@ export default function App() {
               const portfolioItems = [
                 ...scripts.map(s => ({ ...s, itemType: 'script' as const })),
                 ...notes.map(n => ({ ...n, itemType: 'note' as const }))
-              ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+              ].sort((a, b) => {
+                const aPinned = a.pinned ? 1 : 0;
+                const bPinned = b.pinned ? 1 : 0;
+                if (aPinned !== bPinned) {
+                  return bPinned - aPinned;
+                }
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+              });
 
               if (portfolioItems.length === 0) {
                 return (
@@ -1713,10 +1780,21 @@ export default function App() {
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md text-[9px] font-black uppercase tracking-wider border border-amber-500/20">
                               Screenplay 🎥
                             </span>
-                            {/* Script title heading */}
-                            <h3 className="text-sm font-bold text-neutral-200 group-hover:text-amber-400 transition truncate pr-20 pt-1">
-                              {item.title || 'Untitled screenplay'}
-                            </h3>
+                            {/* Script title heading with pin */}
+                            <div className="flex items-center gap-1.5 pr-20 pt-1">
+                              <button
+                                onClick={(e) => handleToggleScriptPin(item.id, e)}
+                                className={`p-1 rounded-md transition duration-150 cursor-pointer hover:bg-neutral-800/80 ${
+                                  item.pinned ? 'text-amber-500 font-bold' : 'text-neutral-500 hover:text-neutral-300'
+                                }`}
+                                title={item.pinned ? 'Unpin Document' : 'Pin Document to Top'}
+                              >
+                                <Pin className={`w-3.5 h-3.5 ${item.pinned ? 'fill-current stroke-[2.5]' : 'stroke-[1.5]'}`} />
+                              </button>
+                              <h3 className="text-sm font-bold text-neutral-200 group-hover:text-amber-400 transition truncate flex-1">
+                                {formatTitle(item.title || 'Untitled screenplay')}
+                              </h3>
+                            </div>
                             {/* Simplified smaller date */}
                             <p className="text-[10px] text-neutral-500 mt-1">
                               {formatDateStr(item.updatedAt)}
@@ -1766,10 +1844,21 @@ export default function App() {
                             <span className="absolute top-4 right-4 px-2 py-0.5 bg-[#97cc5b]/10 text-[#97cc5b] rounded-md text-[9px] font-black uppercase tracking-wider border border-[#97cc5b]/20">
                               Ideas Note 💡
                             </span>
-                            {/* Note title heading */}
-                            <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate pr-20 pt-1">
-                              {item.title || 'Untitled note'}
-                            </h3>
+                            {/* Note title heading with pin */}
+                            <div className="flex items-center gap-1.5 pr-20 pt-1">
+                              <button
+                                onClick={(e) => handleToggleNotePin(item.id, e)}
+                                className={`p-1 rounded-md transition duration-150 cursor-pointer hover:bg-neutral-800/80 ${
+                                  item.pinned ? 'text-[#97cc5b] font-bold' : 'text-neutral-500 hover:text-neutral-300'
+                                }`}
+                                title={item.pinned ? 'Unpin Document' : 'Pin Document to Top'}
+                              >
+                                <Pin className={`w-3.5 h-3.5 ${item.pinned ? 'fill-current stroke-[2.5]' : 'stroke-[1.5]'}`} />
+                              </button>
+                              <h3 className="text-sm font-bold text-neutral-200 group-hover:text-[#97cc5b] transition truncate flex-1">
+                                {formatTitle(item.title || 'Untitled note')}
+                              </h3>
+                            </div>
                             {/* Simplified smaller date */}
                             <p className="text-[10px] text-neutral-500 mt-1">
                               {formatDateStr(item.updatedAt)}
@@ -2023,14 +2112,14 @@ export default function App() {
                         setModalInitialData(activeScript || undefined);
                         setIsModalOpen(true);
                       }}
-                      className="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded-md text-[11px] font-bold text-neutral-800 transition"
+                      className="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded-md text-[11px] font-bold text-black transition"
                     >
                       Configure Metadata
                     </button>
                     <button
                       onClick={() => setShowCoverPage(!showCoverPage)}
                       className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 ${
-                        showCoverPage ? 'bg-[#97cc5b]/10 text-[#5d8f25] border border-neutral-200' : 'bg-neutral-100 text-neutral-500 hover:text-neutral-805 border border-neutral-200'
+                        showCoverPage ? 'bg-[#97cc5b]/10 text-[#5d8f25] border border-neutral-200' : 'bg-neutral-100 text-black hover:bg-neutral-200 border border-neutral-200'
                       }`}
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -2172,25 +2261,25 @@ export default function App() {
         // ============================================
         // IDEAS NOTE EDITOR WORKSPACE
         // ============================================
-        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] relative">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#FAF9F6] dark:bg-[#0c0d0f] relative">
            {/* Main Top bar toolbar component for Idea Note */}
-          <header className="border-b border-neutral-200 bg-white sticky top-0 backdrop-blur-md z-30 select-none">
+          <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111318] sticky top-0 backdrop-blur-md z-30 select-none">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
               
               {/* Back & Breadcrumb info */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleCloseNoteEditor}
-                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-600 transition flex items-center gap-1 active:scale-95 cursor-pointer"
+                  className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition flex items-center gap-1 active:scale-95 cursor-pointer"
                   title="Return to Portfolio"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span className="text-xs font-bold sm:inline hidden">Portfolio</span>
                 </button>
-                <div className="h-4 w-px bg-neutral-200" />
+                <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black uppercase tracking-wider text-[#5d8f25] flex items-center gap-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#5d8f25] dark:text-[#97cc5b] flex items-center gap-1">
                       <Lightbulb className="w-3.5 h-3.5" />
                       Ideas Note
                     </span>
@@ -2206,9 +2295,13 @@ export default function App() {
                   <button
                     onClick={() => setIsNoteSidebarOpen(!isNoteSidebarOpen)}
                     className={`p-2 rounded-lg border transition duration-150 flex items-center justify-center cursor-pointer ${
-                      isNoteSidebarOpen
-                        ? 'bg-[#97cc5b]/15 text-[#5d8f25] border-neutral-300'
-                        : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-600'
+                      darkMode
+                        ? (isNoteSidebarOpen
+                            ? 'bg-black text-[#97cc5b] border-neutral-800'
+                            : 'bg-black text-neutral-400 hover:text-neutral-300 hover:bg-neutral-900 border-neutral-800')
+                        : (isNoteSidebarOpen
+                            ? 'bg-[#97cc5b]/15 text-[#5d8f25] border border-[#cee7aa]'
+                            : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-600')
                     }`}
                     title={isNoteSidebarOpen ? "Hide Formatting Sidebar" : "Show Formatting Sidebar"}
                   >
@@ -2223,7 +2316,11 @@ export default function App() {
                     setNoteModalInitialData(activeNote || undefined);
                     setIsNoteModalOpen(true);
                   }}
-                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-600 border border-transparent hover:border-neutral-200 transition cursor-pointer"
+                  className={`p-2 rounded-lg transition cursor-pointer border ${
+                    darkMode
+                      ? 'hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-300'
+                      : 'hover:bg-neutral-100 border-transparent hover:border-neutral-200 text-neutral-600'
+                  }`}
                   title="Configure Note Details"
                 >
                   <Settings className="w-4 h-4" />
@@ -2232,19 +2329,23 @@ export default function App() {
                 {/* PDF export (Icon Only) */}
                 <button
                   onClick={() => handleExportNotePDF()}
-                  className="p-2 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] rounded-lg text-neutral-600 transition bg-neutral-50 hover:border-[#cee7aa] border border-neutral-200 flex items-center justify-center active:scale-95 cursor-pointer"
+                  className={`p-2 rounded-lg transition flex items-center justify-center active:scale-95 cursor-pointer border ${
+                    darkMode
+                      ? 'bg-black hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-300'
+                      : 'bg-neutral-50 hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] border-neutral-200 hover:border-[#cee7aa] text-neutral-600'
+                  }`}
                   title="Export Note to PDF"
                 >
-                  <Download className="w-4 h-4 text-neutral-600" />
+                  <Download className="w-4 h-4" />
                 </button>
 
                 {/* Save button (Saves work, keeps user inside editor) */}
                 <button
                   onClick={handleManualSaveNote}
-                  className="p-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-bold rounded-lg transition active:scale-95 flex items-center justify-center cursor-pointer"
+                  className="p-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 dark:bg-black dark:text-neutral-250 dark:hover:bg-neutral-900 font-bold rounded-lg transition active:scale-95 flex items-center justify-center cursor-pointer border border-transparent dark:border-neutral-800"
                   title="Save Note Progress"
                 >
-                  <Save className="w-4 h-4 text-neutral-950" />
+                  <Save className="w-4 h-4" />
                 </button>
               </div>
 
@@ -2257,7 +2358,7 @@ export default function App() {
             {/* Slim Floating Formatting Sidebar (Icons Only) - Stay sticky on screen by placing outside of the scrolling main element! */}
             {noteEditMode === 'edit' && (
               <div 
-                className={`absolute top-4 z-40 bg-white/95 backdrop-blur-md border border-neutral-200 p-1.5 rounded-full shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 transition-all duration-300 ease-in-out select-none ${
+                className={`absolute top-4 z-40 bg-white/95 dark:bg-black backdrop-blur-md border border-neutral-200 dark:border-neutral-800 p-1.5 rounded-full shadow-lg flex flex-col items-center gap-1.5 w-11 shrink-0 transition-all duration-300 ease-in-out select-none ${
                   isNoteSidebarOpen 
                     ? 'left-4 opacity-100 scale-100 pointer-events-auto shadow-xl' 
                     : '-left-16 opacity-0 scale-95 pointer-events-none'
@@ -2370,9 +2471,9 @@ export default function App() {
               >
                 
                 {/* Optional brief details metadata overlay panel inside paper */}
-                <div className="mb-5 w-full max-w-[700px] bg-white border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm select-none">
-                  <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25]">
-                    <Clock className="w-3.5 h-3.5 text-[#5d8f25]" />
+                <div className="mb-5 w-full max-w-[700px] bg-white dark:bg-[#111318] border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm select-none">
+                  <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] text-[#5d8f25] dark:text-[#97cc5b]">
+                    <Clock className="w-3.5 h-3.5 text-[#5d8f25] dark:text-[#97cc5b]" />
                     <span>Last edited {activeNote && formatDateStr(activeNote.updatedAt)}</span>
                   </div>
 
@@ -2381,12 +2482,12 @@ export default function App() {
                     {saveStatus === 'saving' ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        <span className="text-neutral-500 font-bold">Saving...</span>
+                        <span className="text-neutral-500 dark:text-neutral-400 font-bold">Saving...</span>
                       </>
                     ) : (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-[#97cc5b]" />
-                        <span className="text-[#5d8f25] font-bold">Draft Saved</span>
+                        <span className="text-[#5d8f25] dark:text-[#97cc5b] font-bold">Draft Saved</span>
                       </>
                     )}
                   </div>
@@ -2394,7 +2495,7 @@ export default function App() {
 
                 {/* Freeform Typing standard white Paper */}
                 <div 
-                  className="w-full max-w-[700px] min-h-[840px] bg-white rounded-lg shadow-2xl p-12 sm:p-16 text-neutral-800 transition-all border border-neutral-200"
+                  className="w-full max-w-[700px] min-h-[840px] bg-white dark:bg-[#111318] rounded-lg shadow-2xl p-12 sm:p-16 text-neutral-800 dark:text-neutral-200 transition-all border border-neutral-200 dark:border-neutral-800"
                 >
                   {noteEditMode === 'edit' ? (
                     <FreeformNoteEditor
@@ -2415,49 +2516,55 @@ export default function App() {
         </div>
       )}
 
-      {/* Simbi Document (.simbidoc) Sharing Modal */}
+      {/* Simbi Document (.simbidoc) Sharing Page */}
       {isShareModalOpen && sharingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs select-none animate-fade-in">
-          <div 
-            className="bg-white border border-neutral-200 rounded-2xl w-full max-w-md shadow-2xl flex flex-col text-neutral-800 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
-              <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-[#5d8f25]" />
-                <span>Share Simbi Document (.simbidoc)</span>
-              </h3>
+        <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-black text-neutral-200' : 'bg-slate-50 text-neutral-800'} select-none overflow-hidden no-scrollbar`}>
+          {/* Header */}
+          <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-neutral-850 bg-black' : 'border-neutral-200 bg-white'} h-14 shrink-0`}>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsShareModalOpen(false)}
-                className="p-1 hover:bg-neutral-100 hover:text-neutral-800 rounded-md transition text-neutral-400 cursor-pointer"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 border cursor-pointer ${
+                  darkMode
+                    ? 'bg-black hover:bg-neutral-900 border-neutral-850 text-neutral-300'
+                    : 'bg-white hover:bg-neutral-100 border-neutral-200 text-neutral-700'
+                }`}
+                title="Go back"
               >
-                <X className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
               </button>
+              <h3 className={`text-sm font-black flex items-center gap-2 ${darkMode ? 'text-white' : 'text-black'}`}>
+                <Share2 className="w-4 h-4 text-[#5d8f25]" />
+                <span>Document Sharing</span>
+              </h3>
             </div>
+          </div>
 
-            {/* Body */}
-            <div className="p-6 space-y-4 text-left">
-              
+          {/* Page Content Body */}
+          <div className="flex-1 overflow-auto no-scrollbar p-6 flex flex-col justify-center items-center">
+            <div className="w-full max-w-sm space-y-4 text-left">
               {/* Document Icon & Title Panel */}
-              <div className="flex flex-col items-center justify-center p-5 bg-neutral-50 border border-neutral-100 rounded-2xl">
+              <div className={`flex flex-col items-center justify-center p-5 border rounded-2xl shadow-sm ${
+                darkMode ? 'bg-black border-neutral-850' : 'bg-white border-neutral-200'
+              }`}>
                 {/* SVG representation of .simbidoc format */}
-                <svg className="w-24 h-24 drop-shadow-md select-none" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-20 h-20 drop-shadow-md select-none" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Rounded white paper sheet with thick green border */}
-                  <rect x="6" y="6" width="88" height="108" rx="14" fill="#FFFFFF" stroke="#97cc5b" strokeWidth="5"/>
+                  <rect x="6" y="6" width="88" height="108" rx="14" fill={darkMode ? "#111318" : "#FFFFFF"} stroke="#97cc5b" strokeWidth="5"/>
                   
                   {/* Elegant document ear-fold page corner at top right */}
                   <path d="M 68 6 L 94 32 L 68 32 Z" fill="#cee7aa" stroke="#97cc5b" strokeWidth="2" strokeLinejoin="round"/>
                   
                   {/* Symbolic screenplay text structures */}
-                  <line x1="20" y1="20" x2="58" y2="20" stroke="#e5e5e5" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="20" y1="32" x2="72" y2="32" stroke="#d4d4d8" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="20" y1="20" x2="58" y2="20" stroke={darkMode ? "#2e323b" : "#e5e5e5"} strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="20" y1="32" x2="72" y2="32" stroke={darkMode ? "#404552" : "#d4d4d8"} strokeWidth="4" strokeLinecap="round"/>
                   
                   {/* Large prominent stylized emerald green S */}
                   <path d="M 38 68 C 38 56, 62 56, 62 68 C 62 80, 38 80, 38 92 C 38 104, 62 104, 62 92" 
                         stroke="#5d8f25" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
-                <h4 className="text-sm font-bold text-neutral-800 mt-3 text-center truncate w-full px-4">
+                <h4 className={`text-sm font-bold mt-3 text-center truncate w-full px-4 ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                   {sharingItem.title || 'Untitled'}
                 </h4>
                 <p className="text-[10px] text-neutral-400 font-mono mt-1">
@@ -2466,13 +2573,15 @@ export default function App() {
               </div>
 
               {/* Informative description text about .simbidoc format */}
-              <div className="text-[11px] text-neutral-500 leading-relaxed bg-[#cee7aa]/10 p-3.5 rounded-xl border border-[#97cc5b]/20 space-y-1.5">
-                <p className="font-bold text-[#5d8f25] flex items-center gap-1">
+              <div className={`text-[11px] leading-relaxed p-3.5 rounded-xl border space-y-1.5 ${
+                darkMode ? 'bg-[#97cc5b]/5 border-[#97cc5b]/20 text-neutral-300' : 'bg-[#cee7aa]/10 border-[#97cc5b]/20 text-neutral-500'
+              }`}>
+                <p className="font-bold text-[#5d8f25] dark:text-[#97cc5b] flex items-center gap-1">
                   <span>✨</span>
                   <span>About .simbidoc Exclusivity:</span>
                 </p>
                 <p>
-                  Saving or sharing files as <strong>.simbidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
+                  Saving or sharing files as <strong className={`${darkMode ? 'text-white' : 'text-neutral-900'}`}>.simbidoc</strong> preserves all interactive screenplay lines, character directions, and custom notes perfectly intact.
                 </p>
                 <p>
                   Any recipient can easily import this file via standard <strong>Import</strong> button on their own device to continue editing seamlessly.
@@ -2497,19 +2606,7 @@ export default function App() {
                 <Upload className="w-4 h-4 rotate-180" />
                 <span>Download Editable .simbidoc File</span>
               </button>
-
             </div>
-
-            {/* Footer with close button */}
-            <div className="flex items-center justify-end p-4 bg-neutral-50 border-t border-neutral-100 gap-2">
-              <button
-                onClick={() => setIsShareModalOpen(false)}
-                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-100 rounded-xl text-xs font-bold text-neutral-700 transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-
           </div>
         </div>
       )}
@@ -2541,7 +2638,7 @@ export default function App() {
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
-              <h3 className="text-sm font-black text-neutral-700 flex items-center gap-2">
+              <h3 className="text-sm font-black text-black flex items-center gap-2">
                 <Kite className="w-5 h-5 text-[#5d8f25]" />
                 <span>Script Find & Replace</span>
               </h3>
@@ -2636,7 +2733,7 @@ export default function App() {
                   setIsFindReplaceOpen(false);
                   setIsExtensionModalOpen(false); // Dismisses Puzzle toolbar as well
                 }}
-                className="px-3 py-2 border border-neutral-200 hover:bg-white text-neutral-600 bg-neutral-100 rounded-xl text-xs font-bold transition cursor-pointer"
+                className="px-3 py-2 border border-neutral-200 hover:bg-white text-black bg-neutral-100 rounded-xl text-xs font-bold transition cursor-pointer"
                 title="Dismiss modal and close formatting tool"
               >
                 Close & Hide Toolbar
@@ -2673,38 +2770,63 @@ export default function App() {
         </div>
       )}
 
-      {/* Modern Workspace Search Modal */}
+      {/* Modern Workspace Search Page */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs animate-fade-in select-none">
-          <div 
-            className="bg-white border border-neutral-200 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col text-neutral-800 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Search Input Header block */}
-            <div className="p-4 border-b border-neutral-100 bg-neutral-50 flex items-center gap-3">
-              <Search className="w-5 h-5 text-[#5d8f25]" />
+        <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-black text-neutral-200' : 'bg-slate-50 text-neutral-800'} select-none overflow-hidden no-scrollbar`}>
+          {/* Header */}
+          <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-neutral-850 bg-black' : 'border-neutral-200 bg-white'} h-14 shrink-0`}>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setIsSearchOpen(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 border cursor-pointer ${
+                  darkMode
+                    ? 'bg-black hover:bg-neutral-900 border-neutral-850 text-neutral-300'
+                    : 'bg-white hover:bg-neutral-100 border-neutral-200 text-neutral-700'
+                }`}
+                title="Go back"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+              <h3 className={`text-sm font-black ${darkMode ? 'text-white' : 'text-black'}`}>Workspace Search</h3>
+            </div>
+          </div>
+
+          {/* Search Inputs Field Below Header */}
+          <div className={`p-4 border-b flex items-center shrink-0 ${
+            darkMode ? 'border-neutral-850 bg-black' : 'border-neutral-100 bg-neutral-100/50'
+          }`}>
+            <div className={`w-full max-w-xl mx-auto flex items-center border rounded-xl px-3 py-2 ${
+              darkMode ? 'bg-black border-neutral-850' : 'bg-white border-neutral-200'
+            }`}>
+              <Search className="w-4 h-4 text-[#5d8f25] mr-2 shrink-0 pointer-events-none" />
               <input
                 autoFocus
                 type="text"
                 placeholder="Search dialogue, descriptions, headings, titles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent border-none text-sm outline-none placeholder-neutral-400 text-neutral-800 p-1"
+                className={`flex-1 bg-transparent border-none text-xs outline-none placeholder-neutral-400 font-sans ${
+                  darkMode ? 'text-neutral-100' : 'text-neutral-800'
+                }`}
               />
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setIsSearchOpen(false);
-                }}
-                className="p-1.5 hover:bg-neutral-200/50 rounded-lg text-neutral-400 hover:text-neutral-600 transition cursor-pointer"
-                title="Cancel search"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className={`p-1 rounded-md transition ${darkMode ? 'hover:bg-neutral-900 text-neutral-400' : 'hover:bg-neutral-100 text-neutral-400'}`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Results Area */}
-            <div className="max-h-[380px] overflow-y-auto p-2 scrollbar-thin divide-y divide-neutral-100">
+          {/* Results Area */}
+          <div className="flex-1 overflow-hidden p-4 max-w-xl mx-auto w-full flex flex-col no-scrollbar">
+            <div className="flex-grow overflow-y-auto no-scrollbar divide-y divide-neutral-100 dark:divide-neutral-800/60 pb-8">
               {searchQuery.trim() === '' ? (
                 <div className="py-12 px-4 text-center flex flex-col items-center justify-center">
                   <Search className="w-8 h-8 text-neutral-300 mb-2 stroke-[1.5]" />
@@ -2803,25 +2925,25 @@ export default function App() {
                         <button
                           key={item.id}
                           onClick={() => handleSelectSearchResult(item.id, item.type)}
-                          className="w-full text-left p-3 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl transition cursor-pointer flex items-center justify-between group border border-transparent hover:border-neutral-100"
+                          className="w-full text-left p-3 hover:bg-neutral-100 dark:hover:bg-neutral-900 active:bg-neutral-100 rounded-xl transition cursor-pointer flex items-center justify-between group border border-transparent hover:border-neutral-200 dark:hover:border-neutral-850"
                         >
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide border ${
                                 item.type === 'script' 
-                                  ? 'bg-[#97cc5b]/10 text-[#5d8f25] border-[#cee7aa]' 
-                                  : 'bg-amber-50 text-amber-600 border-amber-200'
+                                  ? 'bg-[#97cc5b]/10 text-[#5d8f25] dark:text-[#97cc5b] border-[#cee7aa] dark:border-[#5d8f25]/30' 
+                                  : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/35'
                               }`}>
                                 {item.type === 'script' ? 'screenplay' : 'idea note'}
                               </span>
-                              <span className="text-xs font-bold text-neutral-800 group-hover:text-[#5d8f25] transition-colors">
+                              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 group-hover:text-[#5d8f25] dark:group-hover:text-[#97cc5b] transition-colors">
                                 {item.title || 'Untitled Draft'}
                               </span>
                             </div>
-                            <div className="text-[11px] text-neutral-500">
+                            <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
                               {item.subtext}
                             </div>
-                            <div className="text-[10px] text-[#5d8f25] font-semibold italic">
+                            <div className="text-[10px] text-[#5d8f25] dark:text-[#97cc5b] font-semibold italic">
                               {item.reason}
                             </div>
                           </div>
@@ -2834,20 +2956,6 @@ export default function App() {
                   );
                 })()
               )}
-            </div>
-
-            {/* Footer containing Cancel button */}
-            <div className="p-3 bg-neutral-50 border-t border-neutral-100 text-[10px] text-neutral-400 flex items-center justify-between">
-              <span>Tip: Typings are automatically converted to lowercase.</span>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setIsSearchOpen(false);
-                }}
-                className="px-3 py-1.5 border border-neutral-200 hover:bg-white text-neutral-700 bg-neutral-100 rounded-lg text-[11px] font-bold transition cursor-pointer"
-              >
-                Cancel
-              </button>
             </div>
           </div>
         </div>
@@ -2879,7 +2987,7 @@ export default function App() {
               <p className="text-xs text-neutral-600 leading-relaxed text-left">
                 Are you sure you want to permanently delete this {deleteConfirmation.type === 'script' ? 'script' : 'idea note'}:
               </p>
-              <div className="bg-neutral-50 p-3.5 rounded-lg border border-neutral-200 font-mono text-xs text-neutral-800 break-all text-left">
+              <div className="bg-neutral-100 p-3.5 rounded-lg border border-neutral-200 font-mono text-xs text-black font-bold break-all text-left">
                 {deleteConfirmation.title || 'Untitled Draft'}
               </div>
               <p className="text-[10px] text-rose-500 font-semibold flex items-center gap-1.5 text-left">

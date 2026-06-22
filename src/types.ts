@@ -26,6 +26,7 @@ export interface IdeaNote {
   content: string; // HTML format rich text content
   createdAt: string;
   updatedAt: string;
+  pinned?: boolean;
 }
 
 export interface Script {
@@ -39,6 +40,7 @@ export interface Script {
   createdAt: string;
   updatedAt: string;
   content: ScreenplayLine[];
+  pinned?: boolean;
 }
 
 export interface ToastMessage {

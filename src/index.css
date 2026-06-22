@@ -434,3 +434,267 @@ main.bg-neutral-900 .bg-[#0a0a0a] button:hover {
 .animate-fade-in {
   animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================================================
+   Simbi Dark Mode Overrides
+   ========================================================================== */
+
+#screenwriter-app.dark {
+  background-color: #0c0d0f !important;
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark .bg-white {
+  background-color: #111318 !important;
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark .text-neutral-950,
+#screenwriter-app.dark .text-neutral-900,
+#screenwriter-app.dark .text-neutral-800,
+#screenwriter-app.dark .text-neutral-700,
+#screenwriter-app.dark .text-neutral-600 {
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark .text-neutral-500,
+#screenwriter-app.dark .text-neutral-400 {
+  color: #9ca3af !important;
+}
+
+#screenwriter-app.dark .text-neutral-100,
+#screenwriter-app.dark .text-neutral-200,
+#screenwriter-app.dark .text-neutral-300,
+#screenwriter-app.dark .text-neutral-350 {
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark .text-white {
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark main {
+  background-color: #0c0d0f !important;
+}
+
+#screenwriter-app.dark header.border-b {
+  background-color: #111318 !important;
+  border-bottom: 1px solid #232731 !important;
+  color: #f3f4f6 !important;
+}
+
+#screenwriter-app.dark header.border-b h1 {
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark header.border-b p {
+  color: #9ca3af !important;
+}
+
+#screenwriter-app.dark .border-b,
+#screenwriter-app.dark .border-t,
+#screenwriter-app.dark .border-r,
+#screenwriter-app.dark .border {
+  border-color: #232731 !important;
+}
+
+#screenwriter-app.dark aside.w-64 {
+  background-color: #111318 !important;
+  border-right: 1px solid #232731 !important;
+}
+
+#screenwriter-app.dark aside.w-64 .scene-item {
+  color: #c9d1d9 !important;
+}
+
+#screenwriter-app.dark aside.w-64 .scene-item:hover {
+  background-color: #1f232d !important;
+  color: #a3e635 !important;
+}
+
+#screenwriter-app.dark aside.w-64 .scene-item.active {
+  background-color: #1c2718 !important;
+  border-left: 4px solid #a3e635 !important;
+  color: #a3e635 !important;
+}
+
+#screenwriter-app.dark aside.w-64 .bg-neutral-900,
+#screenwriter-app.dark aside.w-64 .bg-neutral-950\/40,
+#screenwriter-app.dark aside.w-64 .bg-neutral-950\/60 {
+  background-color: #111318 !important;
+  border-color: #232731 !important;
+}
+
+#screenwriter-app.dark aside.w-64 kbd {
+  background-color: #1c2718 !important;
+  border-color: #232731 !important;
+  color: #a3e635 !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900 {
+  background-color: #111318 !important;
+  border: 1px solid #232731 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900:hover {
+  border-color: #97cc5b !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900 h3 {
+  color: #f3f4f6 !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900 .border-t {
+  border-color: #232731 !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900 button {
+  background-color: #232c1c !important;
+  color: #a3e635 !important;
+  border: 1px solid #4a6627 !important;
+}
+
+#screenwriter-app.dark .group.bg-neutral-900 button:hover {
+  background-color: #354e1b !important;
+}
+
+#screenwriter-app.dark .sticky.top-0.z-40 {
+  background-color: #111318 !important;
+  border-bottom: 1px solid #232731 !important;
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark .sticky.top-0.z-40 button {
+  background-color: #111318 !important;
+  border-color: #232731 !important;
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark .sticky.top-0.z-40 button:hover {
+  background-color: #1f232d !important;
+  color: #a3e635 !important;
+  border-color: #a3e635 !important;
+}
+
+#screenwriter-app.dark main.bg-neutral-900 {
+  background-color: #0c0d0f !important;
+}
+
+#screenwriter-app.dark .shadow-2xl.rounded.bg-white {
+  background-color: #16181d !important;
+  border-color: #232731 !important;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.3) !important;
+}
+
+#screenwriter-app.dark .script-line {
+  color: #e5e7eb !important;
+  caret-color: #97cc5b;
+}
+
+#screenwriter-app.dark .script-line.active-line {
+  background-color: rgba(151, 204, 91, 0.08) !important;
+}
+
+#screenwriter-app.dark main.bg-neutral-900 .bg-neutral-950 {
+  background-color: #111318 !important;
+  border: 1px solid #232731 !important;
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark main.bg-neutral-900 .bg-neutral-950 button {
+  background-color: #1f232d !important;
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 {
+  background-color: #111318 !important;
+  border: 1px solid #232731 !important;
+  color: #ffffff !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.4) !important;
+}
+
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 input,
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 textarea,
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 select {
+  background-color: #0c0d0f !important;
+  border: 1px solid #232731 !important;
+  color: #ffffff !important;
+}
+
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 input:focus,
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 textarea:focus {
+  border-color: #97cc5b !important;
+}
+
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 .border-b,
+#screenwriter-app.dark .fixed.inset-0 .bg-neutral-900 .border-t {
+  border-color: #232731 !important;
+}
+
+#screenwriter-app.dark input, 
+#screenwriter-app.dark textarea,
+#screenwriter-app.dark select {
+  background-color: #16181d !important;
+  color: #ffffff !important;
+  border-color: #232731 !important;
+}
+
+#screenwriter-app.dark ::selection {
+  background-color: #234c1b;
+  color: #ffffff;
+}
+
+#screenwriter-app.dark .fixed.bottom-6.right-6 .animate-slide-up {
+  color: #000000 !important;
+}
+
+#screenwriter-app .animate-slide-up.pointer-events-auto {
+  color: #111827 !important; /* Force darker text for all toast alerts */
+}
+
+#screenwriter-app.dark .animate-slide-up.pointer-events-auto {
+  color: #000000 !important; /* Force black text in dark mode */
+}
+
+/* Ensure the left toolbar in Ideas note turns black in dark mode */
+#screenwriter-app.dark .absolute.top-4.z-40.bg-white\/95 {
+  background-color: #000000 !important;
+  border-color: #232731 !important;
+}
+
+/* Ensure Save Note Progress button has dark background in dark mode */
+#screenwriter-app.dark button[title="Save Note Progress"] {
+  background-color: #000000 !important;
+  color: #9ca3af !important;
+  border: 1px solid #232731 !important;
+}
+
+/* Ensure cover page and script text are white or grey for visibility in dark mode */
+#screenwriter-app.dark .font-courier,
+#screenwriter-app.dark .font-courier h1,
+#screenwriter-app.dark .font-courier h2,
+#screenwriter-app.dark .font-courier p,
+#screenwriter-app.dark .font-courier span,
+#screenwriter-app.dark .font-courier div {
+  color: #e5e7eb !important;
+}
+
+#screenwriter-app.dark .font-courier .text-black,
+#screenwriter-app.dark .font-courier .text-black\/85 {
+  color: #e5e7eb !important;
+}
+
+/* Force hiding scrollbars across all viewports and browsers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow: -moz-scrollbars-none !important;
+}
