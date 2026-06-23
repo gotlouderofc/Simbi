@@ -223,11 +223,46 @@ export default function App() {
   const isShareModalOpenRef = useRef<boolean>(false);
   isShareModalOpenRef.current = isShareModalOpen;
 
+  // Helper for safe history interaction to avoid unhandled browser exceptions in iframes
+  const safeGetHistoryState = (): any => {
+    try {
+      return window.history.state;
+    } catch (e) {
+      console.warn("Could not read history.state safely:", e);
+      return null;
+    }
+  };
+
+  const safePushState = (state: any, title: string, url?: string) => {
+    try {
+      window.history.pushState(state, title, url);
+    } catch (e) {
+      console.warn("History pushState failed:", e);
+    }
+  };
+
+  const safeReplaceState = (state: any, title: string, url?: string) => {
+    try {
+      window.history.replaceState(state, title, url);
+    } catch (e) {
+      console.warn("History replaceState failed:", e);
+    }
+  };
+
+  const safeGoBack = () => {
+    try {
+      window.history.back();
+    } catch (e) {
+      console.warn("History back failed:", e);
+    }
+  };
+
   // Keep history synced for back-button navigation
   useEffect(() => {
     // Tag initial page as home state if not set
-    if (!window.history.state) {
-      window.history.replaceState({ page: 'home' }, '');
+    const initialState = safeGetHistoryState();
+    if (!initialState) {
+      safeReplaceState({ page: 'home' }, '');
     }
 
     const handlePopState = (event: PopStateEvent) => {
@@ -340,8 +375,8 @@ export default function App() {
       historyIndexRef.current = 0;
       lastSavedJsonRef.current = JSON.stringify(script.content);
       
-      if (window.history.state?.page !== 'editor') {
-        window.history.pushState({ page: 'editor' }, '');
+      if (safeGetHistoryState()?.page !== 'editor') {
+        safePushState({ page: 'editor' }, '');
       }
 
       showToast(`Loaded "${script.title}"`, 'success');
@@ -352,8 +387,8 @@ export default function App() {
 
   // Close script editor and back to catalogue
   const handleCloseEditor = () => {
-    if (window.history.state?.page === 'editor') {
-      window.history.back();
+    if (safeGetHistoryState()?.page === 'editor') {
+      safeGoBack();
     } else {
       if (activeScript) {
         // Final save
@@ -414,14 +449,14 @@ export default function App() {
 
   const handleOpenAboutPage = () => {
     setIsAboutPageOpen(true);
-    if (window.history.state?.page !== 'about') {
-      window.history.pushState({ page: 'about' }, '');
+    if (safeGetHistoryState()?.page !== 'about') {
+      safePushState({ page: 'about' }, '');
     }
   };
 
   const handleCloseAboutPage = () => {
-    if (window.history.state?.page === 'about') {
-      window.history.back();
+    if (safeGetHistoryState()?.page === 'about') {
+      safeGoBack();
     } else {
       setIsAboutPageOpen(false);
     }
@@ -770,8 +805,8 @@ export default function App() {
   const handleOpenShare = (item: any, type: 'script' | 'note') => {
     setSharingItem(item);
     setSharingType(type);
-    if (window.history.state?.page !== 'share') {
-      window.history.pushState({ page: 'share' }, '');
+    if (safeGetHistoryState()?.page !== 'share') {
+      safePushState({ page: 'share' }, '');
     }
     setIsShareModalOpen(true);
   };
@@ -899,8 +934,8 @@ export default function App() {
       setNoteEditMode('edit');
       lastSavedJsonRef.current = note.content || '';
       
-      if (window.history.state?.page !== 'editor') {
-        window.history.pushState({ page: 'editor' }, '');
+      if (safeGetHistoryState()?.page !== 'editor') {
+        safePushState({ page: 'editor' }, '');
       }
 
       showToast(`Loaded "${note.title}"`, 'success');
@@ -911,8 +946,8 @@ export default function App() {
 
   // Close note and back to portfolio
   const handleCloseNoteEditor = () => {
-    if (window.history.state?.page === 'editor') {
-      window.history.back();
+    if (safeGetHistoryState()?.page === 'editor') {
+      safeGoBack();
     } else {
       if (activeNote) {
         const el = document.getElementById('freeform-note-editor') as HTMLDivElement;
@@ -1674,26 +1709,26 @@ export default function App() {
                 {/* Theme Mode Toggle Button */}
                 <button
                   onClick={toggleDarkMode}
-                  className="h-9 w-9 flex items-center justify-center hover:bg-[#97cc5b]/10 hover:text-[#5d8f25] text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-bold transition duration-150 border border-neutral-200 dark:border-neutral-800 hover:border-[#cee7aa] active:scale-95 cursor-pointer shadow-sm bg-white dark:bg-[#111318]"
+                  className="h-8 w-8 mr-2 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-lg transition duration-150 active:scale-95 cursor-pointer bg-transparent"
                   title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
                 >
                   {darkMode ? (
-                    <Sun className="w-4 h-4 text-amber-500 animate-fade-in" />
+                    <Sun className="w-3.5 h-3.5 text-amber-500 animate-fade-in" />
                   ) : (
-                    <Moon className="w-4 h-4 text-neutral-500 animate-fade-in" />
+                    <Moon className="w-3.5 h-3.5 text-neutral-500 animate-fade-in" />
                   )}
                 </button>
 
                 <button
                   onClick={openNewScriptModal}
-                  className="h-9 flex items-center justify-center gap-1.5 px-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-black rounded-lg text-[11px] tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
+                  className="h-8 flex items-center justify-center gap-1.5 px-3 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 font-black rounded-lg text-[11px] tracking-tight shadow-md shadow-[#97cc5b]/10 active:scale-95 transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 text-neutral-950" />
                   <span>Script</span>
                 </button>
                 <button
                   onClick={openNewNoteModal}
-                  className="h-9 flex items-center justify-center gap-1.5 px-3 bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 font-bold rounded-lg text-[11px] tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
+                  className="h-8 flex items-center justify-center gap-1.5 px-3 bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 font-bold rounded-lg text-[11px] tracking-tight shadow-sm active:scale-95 transition cursor-pointer"
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-[#5d8f25]" />
                   <span>Idea</span>
@@ -1723,8 +1758,8 @@ export default function App() {
                 <button
                   onClick={() => {
                     setSearchQuery('');
-                    if (window.history.state?.page !== 'search') {
-                      window.history.pushState({ page: 'search' }, '');
+                    if (safeGetHistoryState()?.page !== 'search') {
+                      safePushState({ page: 'search' }, '');
                     }
                     setIsSearchOpen(true);
                   }}
@@ -2544,8 +2579,8 @@ export default function App() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
-                  if (window.history.state?.page === 'share') {
-                    window.history.back();
+                  if (safeGetHistoryState()?.page === 'share') {
+                    safeGoBack();
                   } else {
                     setIsShareModalOpen(false);
                   }
@@ -2805,8 +2840,8 @@ export default function App() {
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  if (window.history.state?.page === 'search') {
-                    window.history.back();
+                  if (safeGetHistoryState()?.page === 'search') {
+                    safeGoBack();
                   } else {
                     setIsSearchOpen(false);
                   }
