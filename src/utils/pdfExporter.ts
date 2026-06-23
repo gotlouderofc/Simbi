@@ -10,27 +10,91 @@ export function triggerBlobDownload(blobData: Blob | string, filename: string, m
   const win = window as any;
   const blob = blobData instanceof Blob ? blobData : new Blob([blobData], { type: mimeType });
 
-  if (win.Capacitor) {
-    const reader = new FileReader();
-    reader.onloadend = function () {
-      // Expose properties to the global window environment
-      win.lastGeneratedFile = {
+  // Convert blob to base64 synchronously or asynchronously for native environments
+  const reader = new FileReader();
+  reader.onloadend = function () {
+    const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+    const rawBase64 = dataUrl ? (dataUrl.split(',')[1] || '') : '';
+
+    // 1. Expose files on the global object for scraping or synchronizing
+    win.lastGeneratedFile = {
+      filename: filename,
+      mimeType: mimeType,
+      base64: dataUrl,
+      rawBase64: rawBase64
+    };
+
+    // 2. Dispatch a CustomEvent for native webview event systems
+    try {
+      window.dispatchEvent(new CustomEvent('simbiFileDownloaded', {
+        detail: { filename, mimeType, base64: dataUrl, rawBase64 }
+      }));
+    } catch (e) {
+      try {
+        const ev = document.createEvent('Event');
+        ev.initEvent('simbiFileDownloaded', true, true);
+        (ev as any).detail = { filename, mimeType, base64: dataUrl, rawBase64 };
+        window.dispatchEvent(ev);
+      } catch (err) {}
+    }
+
+    // 3. Post a message to support standard iframe interfaces and Capacitor message listeners
+    try {
+      window.postMessage({
+        type: 'SIMBI_FILE_DOWNLOAD',
         filename: filename,
         mimeType: mimeType,
-        base64: reader.result
-      };
-      // Fire the custom structural event that our injector script is listening for
-      window.dispatchEvent(new Event('simbiFileDownloaded'));
-    };
-    reader.readAsDataURL(blob);
-  } else {
-    // Normal desktop browser blob download fallback execution
+        base64: dataUrl,
+        rawBase64: rawBase64
+      }, '*');
+    } catch (e) {
+      console.warn('Failed to postMessage:', e);
+    }
+
+    // 4. Support direct Android Webview bridge (e.g. (@JavascriptInterface AndroidDownload) / (@JavascriptInterface Android))
+    try {
+      if (win.AndroidDownload && typeof win.AndroidDownload.download === 'function') {
+        win.AndroidDownload.download(filename, dataUrl, mimeType);
+      } else if (win.Android && typeof win.Android.downloadFile === 'function') {
+        win.Android.downloadFile(rawBase64, filename, mimeType);
+      }
+    } catch (e) {
+      console.warn('Invoking native Android bridge method failed:', e);
+    }
+
+    // 5. Support iOS message handler if configured
+    try {
+      if (win.webkit && win.webkit.messageHandlers && win.webkit.messageHandlers.simbiDownload) {
+        win.webkit.messageHandlers.simbiDownload.postMessage({
+          filename,
+          mimeType,
+          base64: dataUrl,
+          rawBase64
+        });
+      }
+    } catch (e) {}
+
+    // 6. Generic callback hook registered on window
+    try {
+      if (typeof win.onSimbiFileDownload === 'function') {
+        win.onSimbiFileDownload({ filename, mimeType, base64: dataUrl, rawBase64 });
+      }
+    } catch (e) {}
+  };
+  reader.readAsDataURL(blob);
+
+  // Still execute normal browser fallback so standard browsers continue downloading normally
+  try {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 150);
+  } catch (e) {
+    console.warn('Standard browser anchor fallback download failed:', e);
   }
 }
 

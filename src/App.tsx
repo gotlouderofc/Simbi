@@ -593,6 +593,7 @@ export default function App() {
         return;
       }
       const script = document.createElement('script');
+      script.crossOrigin = 'anonymous';
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
       script.onload = () => {
         const pdfjsLib = (window as any).pdfjsLib;
@@ -1607,24 +1608,6 @@ export default function App() {
   return (
     <div id="screenwriter-app" className={`h-screen w-screen flex flex-col bg-[#FAF9F6] text-neutral-950 font-sans antialiased overflow-hidden select-none ${darkMode ? 'dark' : ''}`}>
       
-      {/* Toast Alert stack popup */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col gap-2 pointer-events-none max-w-[280px] sm:max-w-sm">
-        {toasts.map(t => (
-          <div
-            key={t.id}
-            className={`px-2.5 py-1.5 rounded-md shadow-lg text-neutral-900 border text-[11px] font-semibold flex items-center gap-1.5 animate-slide-up pointer-events-auto transition-all ${
-              t.type === 'success'
-                ? 'bg-[#EBF4E2] border-neutral-200 text-[#426a19]'
-                : t.type === 'error'
-                ? 'bg-rose-50 border-rose-200 text-rose-800'
-                : 'bg-amber-50 border-amber-200 text-amber-800'
-            }`}
-          >
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
-
       {isAboutPageOpen ? (
         // ============================================
         // ABOUT PAGE WORKSPACE
@@ -3079,6 +3062,24 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Toast Alert stack popup */}
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] flex flex-col gap-2 pointer-events-none max-w-[280px] sm:max-w-sm">
+        {toasts.map(t => (
+          <div
+            key={t.id}
+            className={`px-2.5 py-1.5 rounded-md shadow-lg text-neutral-900 border text-[11px] font-semibold flex items-center gap-1.5 animate-slide-up pointer-events-auto transition-all ${
+              t.type === 'success'
+                ? 'bg-[#EBF4E2] border-neutral-200 text-[#426a19]'
+                : t.type === 'error'
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
+          >
+            <span>{t.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
