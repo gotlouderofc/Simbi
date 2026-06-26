@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "SharedDocument": {
+      "title": "SharedDocument",
+      "description": "A document uploaded to the cloud for webview-safe sharing and browser download fallback",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the shared document"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the document"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "Type of content ('script' or 'note')"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Firebase Anonymous/Google user ID of the creator"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when uploaded"
+        },
+        "payloadJson": {
+          "type": "string",
+          "description": "Stringified JSON object representing either screenplay lines list or rich note content"
+        }
+      },
+      "required": ["id", "title", "contentType", "authorId", "createdAt", "payloadJson"]
+    }
+  },
+  "firestore": {
+    "/shared_documents/{documentId}": {
+      "schema": "SharedDocument",
+      "description": "Collection of shared elements, screenplay documents, and planning notes."
+    }
+  }
+}

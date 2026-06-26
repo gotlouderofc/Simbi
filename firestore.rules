@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Master Gate default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 2. Validation Blueprint for Shared Documents
+    function isValidSharedDocument(data) {
+      return data.keys().hasAll(['id', 'title', 'contentType', 'authorId', 'createdAt', 'payloadJson'])
+        && data.keys().size() == 6
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.contentType is string && (data.contentType == 'script' || data.contentType == 'note')
+        && data.authorId is string && data.authorId.size() <= 128
+        && data.createdAt is string && data.createdAt.size() <= 100
+        && data.payloadJson is string && data.payloadJson.size() <= 1048576; // Safeguard within 1MB firestore limit
+    }
+
+    match /shared_documents/{documentId} {
+      // 3. Path Variable Hardening
+      // Anyone (even signed in anonymously) can download/import a shared document with the ID
+      allow get: if isValidId(documentId);
+      
+      // 8. Prevent database scraping list operations
+      allow list: if false;
+
+      // Create validation
+      allow create: if isSignedIn()
+        && isValidId(documentId)
+        && isValidSharedDocument(incoming())
+        && incoming().authorId == request.auth.uid;
+
+      // Immutable once created
+      allow update: if false;
+
+      // Only the genuine author can take down a shared file
+      allow delete: if isSignedIn()
+        && existing().authorId == request.auth.uid;
+    }
+  }
+}

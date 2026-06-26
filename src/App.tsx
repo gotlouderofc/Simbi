@@ -52,12 +52,14 @@ import {
   MapPin,
   Sun,
   Moon,
-  Pin
+  Pin,
+  Cloud
 } from 'lucide-react';
 
 import { Script, ScreenplayLine, ScreenplayFormat, ToastMessage, IdeaNote } from './types';
 import { Storage } from './utils/storage';
 import { PDFExporter, triggerBlobDownload } from './utils/pdfExporter';
+import { uploadDocument, getSharedDocument, SharedDocument } from './firebase';
 import { Toolbar } from './components/Toolbar';
 import { Sidebar } from './components/Sidebar';
 import { DetailModal } from './components/DetailModal';
@@ -200,6 +202,18 @@ export default function App() {
   // Custom persistent notify toast channel
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Cloud Sharing & Download states
+  const [isCloudUploadLoading, setIsCloudUploadLoading] = useState<boolean>(false);
+  const [isCloudShareModalOpen, setIsCloudShareModalOpen] = useState<boolean>(false);
+  const [activeCloudUrl, setActiveCloudUrl] = useState<string>('');
+  const [activeCloudTitle, setActiveCloudTitle] = useState<string>('');
+  const [activeCloudType, setActiveCloudType] = useState<'script' | 'note' | null>(null);
+  const [activeCloudItemData, setActiveCloudItemData] = useState<any>(null);
+
+  // Cloud Import (query search parameters) States
+  const [cloudSharedDoc, setCloudSharedDoc] = useState<SharedDocument | null>(null);
+  const [isFetchingCloudDoc, setIsFetchingCloudDoc] = useState<boolean>(false);
+
   // History system ref variables (undo / redo)
   const historyRef = useRef<ScreenplayLine[][]>([]);
   const historyIndexRef = useRef<number>(-1);
@@ -318,6 +332,29 @@ export default function App() {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
+  }, []);
+
+  // Check for cloud shared document on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cloudId = params.get('cloudId');
+    if (cloudId) {
+      setIsFetchingCloudDoc(true);
+      getSharedDocument(cloudId)
+        .then((docData) => {
+          setIsFetchingCloudDoc(false);
+          if (docData) {
+            setCloudSharedDoc(docData);
+          } else {
+            showToast('The shared cloud document was not found or has expired.', 'error');
+          }
+        })
+        .catch((err) => {
+          setIsFetchingCloudDoc(false);
+          console.error(err);
+          showToast('Failed to retrieve the shared cloud document.', 'error');
+        });
+    }
   }, []);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -844,6 +881,113 @@ export default function App() {
       triggerBlobDownload(docString, filename, 'application/octet-stream');
       showToast('Downloaded .simbidoc file to your storage. You can attach it safely to share!', 'success');
     }
+  };
+
+  const handleCloudUpload = async (item: any, type: 'script' | 'note') => {
+    if (!item) return;
+    setIsCloudUploadLoading(true);
+    showToast('Securely publishing document to Cloud...', 'info');
+
+    try {
+      // Create a short shareable ID
+      const shortId = 'c_' + Math.random().toString(36).substring(2, 10);
+      
+      const uploadedId = await uploadDocument(shortId, item.title, type, item);
+      
+      if (uploadedId) {
+        // Construct standard web URL with origin or vercel fallback
+        const origin = window.location.origin || 'https://simbi-kappa.vercel.app';
+        const shareUrl = `${origin}/?cloudId=${uploadedId}`;
+        
+        setActiveCloudUrl(shareUrl);
+        setActiveCloudTitle(item.title || 'Untitled');
+        setActiveCloudType(type);
+        setActiveCloudItemData(item);
+        setIsCloudShareModalOpen(true);
+        showToast('Successfully published and linked to Cloud!', 'success');
+      } else {
+        showToast('Publishing failed. Please try again.', 'error');
+      }
+    } catch (error: any) {
+      console.error(error);
+      showToast('Cloud connection error. Document was not shared.', 'error');
+    } finally {
+      setIsCloudUploadLoading(false);
+    }
+  };
+
+  const handleImportCloudDoc = () => {
+    if (!cloudSharedDoc) return;
+    try {
+      const payload = JSON.parse(cloudSharedDoc.payloadJson);
+      if (cloudSharedDoc.contentType === 'script') {
+        const newScript: Script = {
+          ...payload,
+          id: 'script_cloud_' + Date.now().toString(),
+          updatedAt: new Date().toISOString()
+        };
+        Storage.saveScript(newScript);
+        setScripts(Storage.getScripts());
+        setCurrentScriptId(newScript.id);
+        setActiveScript(newScript);
+        setLines(newScript.content || []);
+        
+        // Remove query parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('cloudId');
+        window.history.replaceState({}, '', url.toString());
+        setCloudSharedDoc(null);
+        showToast(`Successfully imported cloud screenplay "${newScript.title}" into workspace!`, 'success');
+      } else {
+        const newNote: IdeaNote = {
+          ...payload,
+          id: 'note_cloud_' + Date.now().toString(),
+          updatedAt: new Date().toISOString()
+        };
+        Storage.saveNote(newNote);
+        setNotes(Storage.getNotes());
+        setCurrentNoteId(newNote.id);
+        setActiveNote(newNote);
+        
+        // Remove query parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('cloudId');
+        window.history.replaceState({}, '', url.toString());
+        setCloudSharedDoc(null);
+        showToast(`Successfully imported cloud note "${newNote.title}" into workspace!`, 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error parsing shared document payload.', 'error');
+    }
+  };
+
+  const handleExportCloudDocPDF = () => {
+    if (!cloudSharedDoc) return;
+    try {
+      const payload = JSON.parse(cloudSharedDoc.payloadJson);
+      if (cloudSharedDoc.contentType === 'script') {
+        handleExportPDF(payload as Script);
+      } else {
+        handleExportNotePDF(payload as IdeaNote);
+      }
+      showToast('Processing cloud document PDF export...', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to export cloud document PDF.', 'error');
+    }
+  };
+
+  const handleCloseCloudLanding = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('cloudId');
+    window.history.replaceState({}, '', url.toString());
+    setCloudSharedDoc(null);
+  };
+
+  const handleCopyCloudLink = () => {
+    navigator.clipboard.writeText(activeCloudUrl);
+    showToast('Secure Web Address copied to clipboard!', 'success');
   };
 
   // Find text occurrences in current screenplay (case-insensitive)
@@ -1855,6 +1999,13 @@ export default function App() {
                               <Share2 className="w-3.5 h-3.5" />
                             </button>
                             <button
+                              onClick={() => handleCloudUpload(item, 'script')}
+                              className="p-1 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500 animate-pulse-slow"
+                              title="Publish & Download via Secure Cloud Link"
+                            >
+                              <Cloud className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => handleExportPDF(item as Script)}
                               className="p-1 hover:bg-neutral-800 hover:text-amber-500 rounded-md transition text-neutral-500"
                               title="Download PDF"
@@ -1917,6 +2068,13 @@ export default function App() {
                               title="Share Idea Note"
                             >
                               <Share2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleCloudUpload(item, 'note')}
+                              className="p-1 hover:bg-neutral-800 hover:text-[#97cc5b] rounded-md transition text-neutral-500 animate-pulse-slow"
+                              title="Publish & Download via Secure Cloud Link"
+                            >
+                              <Cloud className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleExportNotePDF(item as IdeaNote)}
@@ -3057,6 +3215,158 @@ export default function App() {
                 className="px-5 py-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-lg text-xs font-bold shadow-md shadow-[#97cc5b]/10 transition cursor-pointer"
               >
                 Delete Forever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Fetching Loading Overlay Screen */}
+      {isFetchingCloudDoc && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-neutral-950/90 backdrop-blur-md select-none">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-12 h-12 border-4 border-[#97cc5b] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-bold text-white tracking-wide animate-pulse">
+              📡 Connecting to secure cloud storage...
+            </p>
+            <p className="text-xs text-neutral-400">
+              Retrieving shared movie screenplay or ideas note...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud shared landing/import page modal */}
+      {cloudSharedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm select-none">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col text-neutral-100 overflow-hidden animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-neutral-800">
+              <h3 className="text-sm font-bold text-[#97cc5b] flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-[#97cc5b]" />
+                <span className="text-neutral-100">Premium Cloud Document Shared!</span>
+              </h3>
+              <button
+                onClick={handleCloseCloudLanding}
+                className="p-1 hover:bg-neutral-800 hover:text-white rounded-md transition text-neutral-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 text-left">
+              <div className="space-y-1">
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border ${
+                  cloudSharedDoc.contentType === 'script' 
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+                    : 'bg-[#97cc5b]/10 text-[#97cc5b] border-[#97cc5b]/20'
+                }`}>
+                  {cloudSharedDoc.contentType === 'script' ? 'screenplay 🎥' : 'ideas note 💡'}
+                </span>
+                <h2 className="text-lg font-black text-neutral-100 tracking-tight mt-1">
+                  {cloudSharedDoc.title}
+                </h2>
+                <p className="text-[10px] text-neutral-500">
+                  Published securely on: {new Date(cloudSharedDoc.createdAt).toLocaleString()}
+                </p>
+              </div>
+
+              <div className="bg-neutral-955 p-4 rounded-xl border border-neutral-850 space-y-3">
+                <p className="text-[11px] text-neutral-450 leading-relaxed">
+                  This document is synchronized via cloud servers. Selecting **Import Workspace** downloads it into your local browser workspace instantly. Or you can run client-side PDF synthesis to write it out to device storage.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-5 bg-neutral-955 border-t border-neutral-850 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleCloseCloudLanding}
+                className="order-3 sm:order-1 flex-1 py-2.5 bg-neutral-850 hover:bg-neutral-800 hover:text-white rounded-lg text-xs font-bold text-neutral-400 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExportCloudDocPDF}
+                className="order-2 flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 text-neutral-200 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Export PDF</span>
+              </button>
+              <button
+                onClick={handleImportCloudDoc}
+                className="order-1 flex-[2] py-2.5 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-lg text-xs font-black shadow-md shadow-[#97cc5b]/15 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-neutral-950" />
+                <span>Import Workspace</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud upload share modal info popup */}
+      {isCloudShareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/85 backdrop-blur-xs select-none">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md shadow-2xl flex flex-col text-neutral-100 overflow-hidden animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-neutral-800">
+              <h3 className="text-sm font-extrabold text-[#97cc5b] flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-[#97cc5b]" />
+                <span>Published to Cloud Successfully!</span>
+              </h3>
+              <button
+                onClick={() => setIsCloudShareModalOpen(false)}
+                className="p-1 hover:bg-neutral-800 hover:text-white rounded-md transition text-neutral-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4 text-left">
+              <div className="space-y-1">
+                <h4 className="text-[10px] uppercase tracking-wider font-extrabold text-neutral-500">Shared Draft Title</h4>
+                <p className="text-sm font-black text-neutral-200 italic">"{activeCloudTitle}"</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider font-extrabold text-neutral-500">Secure Web Address (https)</label>
+                <div className="flex items-center gap-2 bg-neutral-955 p-2.5 rounded-lg border border-neutral-850">
+                  <span className="text-xs text-[#97cc5b] font-mono truncate select-all flex-1">
+                    {activeCloudUrl}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-neutral-450 leading-normal">
+                This secure `https` URL enables standard browser-safe downloading of PDF exports and allows direct one-click imports, completely bypassing Capacitor file blockades.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 bg-neutral-955 border-t border-neutral-850 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setIsCloudShareModalOpen(false)}
+                className="order-3 sm:order-1 flex-1 py-1.5 bg-neutral-850 hover:bg-neutral-800 hover:text-white rounded-lg text-xs font-bold text-neutral-400 transition"
+              >
+                Dismiss
+              </button>
+              <a
+                href={activeCloudUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="order-2 flex-1 py-2 bg-neutral-800 hover:bg-neutral-750 text-neutral-200 hover:text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 text-center border border-neutral-700"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Open in Web</span>
+              </a>
+              <button
+                onClick={handleCopyCloudLink}
+                className="order-1 flex-1 py-2 bg-[#97cc5b] hover:bg-[#86b84f] text-neutral-950 rounded-lg text-xs font-black shadow-md shadow-[#97cc5b]/10 transition cursor-pointer"
+              >
+                Copy Link
               </button>
             </div>
           </div>
