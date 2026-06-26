@@ -24,6 +24,31 @@ export function triggerBlobDownload(blobData: Blob | string, filename: string, m
       rawBase64: rawBase64
     };
 
+    // 1.5. Automatic Capacitor Filesystem Support (if plugin is registered on the global object)
+    try {
+      if (win.Capacitor && win.Capacitor.Plugins && win.Capacitor.Plugins.Filesystem) {
+        const fs = win.Capacitor.Plugins.Filesystem;
+        fs.writeFile({
+          path: filename,
+          data: rawBase64,
+          directory: 'DOCUMENTS',
+          encoding: 'base64'
+        }).then(() => {
+          console.log(`Capacitor: successfully wrote ${filename} to Documents directory.`);
+        }).catch((err: any) => {
+          // If DOCUMENTS is not writable, try fallback directory or custom toast alert
+          console.warn('Capacitor: Failed to write to DOCUMENTS directory, trying default storage path...', err);
+          fs.writeFile({
+            path: filename,
+            data: rawBase64,
+            encoding: 'base64'
+          }).catch((e: any) => console.error('Capacitor fallback write failed:', e));
+        });
+      }
+    } catch (e) {
+      console.warn('Attempt to write file via standard Capacitor Filesystem plugin failed:', e);
+    }
+
     // 2. Dispatch a CustomEvent for native webview event systems
     try {
       window.dispatchEvent(new CustomEvent('simbiFileDownloaded', {
